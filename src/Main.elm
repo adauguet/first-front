@@ -30,6 +30,7 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Region as Region
 import Html exposing (Html)
 import UI
 
@@ -70,6 +71,7 @@ header { class, orientation } =
                 [ width fill
                 , padding 16
                 , Background.color UI.secondary
+                , Region.navigation
                 ]
             <|
                 UI.logoWhite 28
@@ -79,6 +81,7 @@ header { class, orientation } =
                 [ width fill
                 , padding 32
                 , Background.color UI.secondary
+                , Region.navigation
                 ]
                 [ UI.logoWhite 48
                 , el [ alignRight ] <| callLinkWhite
@@ -91,7 +94,13 @@ content { class, orientation } =
         importContactParagraph : Element msg
         importContactParagraph =
             textColumn [ width fill, spacing 32, alignTop ]
-                [ paragraph [ Font.size 32, Font.color UI.secondary, Font.family [ Font.typeface "Lora" ] ] [ text "Importez vos contacts" ]
+                [ paragraph
+                    [ Font.size 32
+                    , Font.color UI.secondary
+                    , Font.family [ Font.typeface "Lora" ]
+                    , Region.heading 1
+                    ]
+                    [ text "Importez vos contacts" ]
                 , textColumn [ width fill, spacing 16 ]
                     [ paragraph [ spacing 8 ] [ text "Importez directement vos adresses sous forme de tableau Excel." ]
                     , paragraph [ spacing 8 ] [ text "Vous pouvez aussi ajouter une adresse manuellement." ]
@@ -101,7 +110,13 @@ content { class, orientation } =
         chooseEnvelopesParagraph : Element msg
         chooseEnvelopesParagraph =
             column [ width fill, spacing 32, alignTop ]
-                [ paragraph [ Font.size 32, Font.color UI.secondary, Font.family [ Font.typeface "Lora" ] ] [ text "Choisissez vos enveloppes" ]
+                [ paragraph
+                    [ Font.size 32
+                    , Font.color UI.secondary
+                    , Font.family [ Font.typeface "Lora" ]
+                    , Region.heading 1
+                    ]
+                    [ text "Choisissez vos enveloppes" ]
                 , textColumn [ width fill, spacing 16 ]
                     [ paragraph [ spacing 8 ] [ text "Choisissez parmi une large gamme d'enveloppes de haute qualité : format, dimensions, couleur, fermeture ..." ]
                     , paragraph [ spacing 8 ] [ text "Vous avez déjà vos enveloppes ? Envoyez-les nous !" ]
@@ -111,7 +126,13 @@ content { class, orientation } =
         chooseFontParagraph : Element msg
         chooseFontParagraph =
             column [ width fill, spacing 32, alignTop ]
-                [ paragraph [ Font.size 32, Font.color UI.secondary, Font.family [ Font.typeface "Lora" ] ] [ text "Choisissez la police" ]
+                [ paragraph
+                    [ Font.size 32
+                    , Font.color UI.secondary
+                    , Font.family [ Font.typeface "Lora" ]
+                    , Region.heading 1
+                    ]
+                    [ text "Choisissez la police" ]
                 , textColumn [ width fill, spacing 16 ]
                     [ paragraph [ spacing 8 ] [ text "Le choix d'une police est très personnel." ]
                     , paragraph [ spacing 8 ]
@@ -124,7 +145,13 @@ content { class, orientation } =
         receiveEnvelopesParagraph : Element msg
         receiveEnvelopesParagraph =
             column [ width fill, spacing 32, alignTop ]
-                [ paragraph [ Font.size 32, Font.color UI.secondary, Font.family [ Font.typeface "Lora" ] ] [ text "Recevez vos enveloppes imprimées avec vos adresses" ]
+                [ paragraph
+                    [ Font.size 32
+                    , Font.color UI.secondary
+                    , Font.family [ Font.typeface "Lora" ]
+                    , Region.heading 1
+                    ]
+                    [ text "Recevez vos enveloppes imprimées avec vos adresses" ]
                 , textColumn [ width fill, spacing 16 ]
                     [ paragraph [ spacing 8 ] [ text "Vous n'avez plus qu'à mettre sous pli !" ]
                     ]
@@ -137,6 +164,7 @@ content { class, orientation } =
                 , height fill
                 , padding 32
                 , spacing 64
+                , Region.mainContent
                 ]
                 [ textColumn [ width fill, spacing 16 ]
                     [ paragraph [ Font.size 24, Font.family [ Font.typeface "Lora" ] ] [ text "Vous avez mieux à faire que d'écrire vos adresses à la main !" ]
@@ -163,6 +191,7 @@ content { class, orientation } =
                 , height fill
                 , padding 64
                 , spacing 64
+                , Region.mainContent
                 ]
                 [ textColumn [ width fill, spacing 16 ]
                     [ paragraph [ Font.size 24 ] [ text "Vous avez mieux à faire que d'écrire vos adresses à la main !" ]
