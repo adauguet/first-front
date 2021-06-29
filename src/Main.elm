@@ -15,10 +15,9 @@ import Element
         , fill
         , height
         , layout
-        , link
+        , maximum
         , none
         , padding
-        , paddingXY
         , paragraph
         , px
         , row
@@ -28,7 +27,6 @@ import Element
         , width
         )
 import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
 import Html exposing (Html)
@@ -73,8 +71,7 @@ header { class, orientation } =
                 , Background.color UI.secondary
                 , Region.navigation
                 ]
-            <|
-                UI.logoWhite 28
+                (UI.logoWhite 28)
 
         _ ->
             row
@@ -84,7 +81,7 @@ header { class, orientation } =
                 , Region.navigation
                 ]
                 [ UI.logoWhite 48
-                , el [ alignRight ] <| callLinkWhite
+                , UI.callLink (alignRight :: UI.callLinkWhiteAttributes)
                 ]
 
 
@@ -102,7 +99,18 @@ content { class, orientation } =
                     ]
                     [ text "Importez vos contacts" ]
                 , textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ spacing 8 ] [ text "Importez directement vos adresses sous forme de tableau Excel." ]
+                    [ paragraph [ spacing 8 ]
+                        [ text "Importez directement vos adresses sous forme de tableau Excel."
+                        ]
+                    , paragraph [ spacing 8 ]
+                        [ text "Plusieurs formats sont possibles : "
+                        , el [ Font.family [ Font.monospace ] ] <| text ".xls"
+                        , text ", "
+                        , el [ Font.family [ Font.monospace ] ] <| text ".xlsx"
+                        , text ", ou "
+                        , el [ Font.family [ Font.monospace ] ] <| text ".csv"
+                        , text "."
+                        ]
                     , paragraph [ spacing 8 ] [ text "Vous pouvez aussi ajouter une adresse manuellement." ]
                     ]
                 ]
@@ -119,7 +127,7 @@ content { class, orientation } =
                     [ text "Choisissez vos enveloppes" ]
                 , textColumn [ width fill, spacing 16 ]
                     [ paragraph [ spacing 8 ] [ text "Choisissez parmi une large gamme d'enveloppes de haute qualité : format, dimensions, couleur, fermeture ..." ]
-                    , paragraph [ spacing 8 ] [ text "Vous avez déjà vos enveloppes ? Envoyez-les nous !" ]
+                    , paragraph [ spacing 8, Font.bold ] [ text "Vous avez déjà vos enveloppes ? Envoyez-les nous !" ]
                     ]
                 ]
 
@@ -137,8 +145,10 @@ content { class, orientation } =
                     [ paragraph [ spacing 8 ] [ text "Le choix d'une police est très personnel." ]
                     , paragraph [ spacing 8 ]
                         [ UI.logoWithoutEmoji 28
-                        , text " vous propose un vaste choix de polices, sélectionnées une à une par nos soins. Manuscrite ou en lettres d'imprimerie, vous trouverez votre bonheur !"
+                        , text " vous propose un vaste choix de polices, sélectionnées une à une par nos soins."
                         ]
+                    , paragraph [ spacing 8 ] [ text "Manuscrite ou en lettres d'imprimerie, vous trouverez votre bonheur !" ]
+                    , paragraph [ spacing 8 ] [ text "Choisissez aussi la couleur en accord avec celle de votre enveloppe et de votre thème." ]
                     ]
                 ]
 
@@ -153,7 +163,7 @@ content { class, orientation } =
                     ]
                     [ text "Recevez vos enveloppes imprimées avec vos adresses" ]
                 , textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ spacing 8 ] [ text "Vous n'avez plus qu'à mettre sous pli !" ]
+                    [ paragraph [ spacing 8 ] [ text "Vous n'avez plus qu'à mettre sous pli ! 💌" ]
                     ]
                 ]
     in
@@ -181,7 +191,7 @@ content { class, orientation } =
                 , receiveEnvelopesParagraph
                 , column [ spacing 16, centerX ]
                     [ el [ centerX ] <| text "Appelez-nous !"
-                    , callLink
+                    , UI.callLink UI.callLinkAttributes
                     ]
                 ]
 
@@ -193,15 +203,23 @@ content { class, orientation } =
                 , spacing 64
                 , Region.mainContent
                 ]
-                [ textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ Font.size 24 ] [ text "Vous avez mieux à faire que d'écrire vos adresses à la main !" ]
-                    , paragraph [] [ text "Mariage, naissance, baptême, communion ... Gagnez du temps sur les tâches chronophages, concentrez-vous sur l'essentiel." ]
-                    , paragraph []
+                [ textColumn [ width fill, spacing 16, Font.size 24 ]
+                    [ paragraph [ spacing 8 ] [ text "Vous avez mieux à faire que d'écrire vos adresses à la main !" ]
+                    , paragraph [ spacing 8 ] [ text "Mariage, naissance, baptême, communion ... Gagnez du temps sur les tâches chronophages, concentrez-vous sur l'essentiel." ]
+                    , paragraph [ spacing 8 ]
                         [ text "Avec "
-                        , UI.logoWithoutEmoji 28
-                        , text ", achetez vos enveloppes avec vos adresses imprimées dessus."
+                        , UI.logoWithoutEmoji 32
+                        , text ", recevez vos enveloppes avec vos adresses imprimées dessus."
                         ]
                     ]
+                , el [ width fill ] <|
+                    el
+                        [ width <| maximum 400 <| fill
+                        , centerX
+                        , height <| px 1
+                        , Background.color UI.secondary
+                        ]
+                        none
                 , row [ width fill, spacing 64 ]
                     [ importContactParagraph
                     , el
@@ -240,38 +258,9 @@ content { class, orientation } =
                     ]
                 , column [ spacing 16, centerX ]
                     [ el [ centerX ] <| text "Appelez-nous !"
-                    , callLink
+                    , UI.callLink UI.callLinkAttributes
                     ]
                 ]
-
-
-callLink : Element msg
-callLink =
-    link
-        [ Background.color UI.secondary
-        , paddingXY 32 16
-        , Border.rounded 5
-        , Font.color UI.white
-        , Font.semiBold
-        , Border.glow UI.gray 2
-        ]
-        { url = "tel:+33638377163"
-        , label = text "06 38 37 71 63"
-        }
-
-
-callLinkWhite : Element msg
-callLinkWhite =
-    link
-        [ Background.color UI.white
-        , paddingXY 32 16
-        , Border.rounded 5
-        , Font.color UI.secondary
-        , Font.semiBold
-        ]
-        { url = "tel:+33638377163"
-        , label = text "06 38 37 71 63"
-        }
 
 
 type alias Flags =

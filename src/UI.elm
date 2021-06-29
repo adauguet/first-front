@@ -1,5 +1,8 @@
 module UI exposing
-    ( gray
+    ( callLink
+    , callLinkAttributes
+    , callLinkWhiteAttributes
+    , gray
     , logo
     , logoWhite
     , logoWithoutEmoji
@@ -9,12 +12,17 @@ module UI exposing
 
 import Element
     exposing
-        ( Color
+        ( Attribute
+        , Color
         , Element
         , el
+        , link
+        , paddingXY
         , rgb255
         , text
         )
+import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 
 
@@ -59,3 +67,33 @@ white =
 gray : Color
 gray =
     rgb255 230 230 230
+
+
+callLink : List (Attribute msg) -> Element msg
+callLink attributes =
+    link
+        attributes
+        { url = "tel:+33638377163"
+        , label = text "06 38 37 71 63"
+        }
+
+
+callLinkAttributes : List (Attribute msg)
+callLinkAttributes =
+    [ Background.color secondary
+    , paddingXY 32 16
+    , Border.rounded 5
+    , Font.color white
+    , Font.semiBold
+    , Border.glow gray 2
+    ]
+
+
+callLinkWhiteAttributes : List (Attribute msg)
+callLinkWhiteAttributes =
+    [ Background.color white
+    , paddingXY 32 16
+    , Border.rounded 5
+    , Font.color secondary
+    , Font.semiBold
+    ]
