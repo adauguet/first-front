@@ -2,28 +2,26 @@ module UI exposing
     ( callLink
     , callLinkAttributes
     , callLinkWhiteAttributes
-    , gray
     , logo
     , logoWhite
     , logoWithoutEmoji
-    , secondary
-    , white
     )
 
 import Element
     exposing
         ( Attribute
-        , Color
         , Element
         , el
         , link
+        , mouseOver
         , paddingXY
-        , rgb255
         , text
         )
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import UI.Color exposing (primary, white)
+import UI.Color.Tailwind as Color
 
 
 logo : Int -> Element msg
@@ -54,21 +52,6 @@ logoWhite size =
         (text "💌  Mes Petites Enveloppes")
 
 
-secondary : Color
-secondary =
-    rgb255 255 100 100
-
-
-white : Color
-white =
-    rgb255 255 255 255
-
-
-gray : Color
-gray =
-    rgb255 230 230 230
-
-
 callLink : List (Attribute msg) -> Element msg
 callLink attributes =
     link
@@ -80,12 +63,11 @@ callLink attributes =
 
 callLinkAttributes : List (Attribute msg)
 callLinkAttributes =
-    [ Background.color secondary
+    [ Background.color primary
     , paddingXY 32 16
     , Border.rounded 5
     , Font.color white
     , Font.semiBold
-    , Border.glow gray 2
     ]
 
 
@@ -94,6 +76,9 @@ callLinkWhiteAttributes =
     [ Background.color white
     , paddingXY 32 16
     , Border.rounded 5
-    , Font.color secondary
+    , Font.color primary
     , Font.semiBold
+    , mouseOver
+        [ Background.color Color.warmGray100
+        ]
     ]

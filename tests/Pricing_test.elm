@@ -1,9 +1,9 @@
 module Pricing_test exposing (..)
 
-import Expect exposing (FloatingPointTolerance(..), equal, within)
+import Expect exposing (FloatingPointTolerance(..), within)
 import Fuzz exposing (intRange)
 import Pricing exposing (Pricing, Step, total)
-import Test exposing (Test, describe, fuzz, test)
+import Test exposing (Test, describe, fuzz)
 
 
 pricing : Pricing

@@ -1,6 +1,7 @@
 module Main exposing (..)
 
-import Browser exposing (Document, document)
+import Browser exposing (Document, UrlRequest, application)
+import Browser.Navigation exposing (Key)
 import Element
     exposing
         ( Device
@@ -8,19 +9,20 @@ import Element
         , Element
         , Orientation(..)
         , alignRight
-        , alignTop
         , centerX
+        , centerY
         , column
         , el
         , fill
         , height
         , layout
-        , maximum
+        , mouseOver
         , none
         , padding
+        , paddingXY
         , paragraph
-        , px
         , row
+        , shrink
         , spacing
         , text
         , textColumn
@@ -30,35 +32,123 @@ import Element.Background as Background
 import Element.Font as Font
 import Element.Region as Region
 import Html exposing (Html)
+import Page.Home as Home
+import Page.Pricing as Pricing
+import Route exposing (Route)
 import UI
+import UI.Color as Color
+import UI.Color.Tailwind as Color
+import Url exposing (Url)
 
 
 type alias Model =
-    { device : Device }
+    { key : Key
+    , device : Device
+    , page : Page
+    }
 
 
-init : Flags -> Model
-init { window } =
-    { device = Element.classifyDevice window }
+type Page
+    = Home
+    | Pricing
+    | NotFound
+
+
+fromRoute : Maybe Route -> Page
+fromRoute mRoute =
+    case mRoute of
+        Just Route.Home ->
+            Home
+
+        Just Route.Pricing ->
+            Pricing
+
+        Nothing ->
+            NotFound
+
+
+init : Flags -> Url -> Key -> ( Model, Cmd msg )
+init { window } url key =
+    ( { key = key
+      , device = Element.classifyDevice window
+      , page = fromRoute <| Route.parse url
+      }
+    , Cmd.none
+    )
+
+
+type Msg
+    = UrlChanged Url
+    | ClickedLink UrlRequest
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    let
+        _ =
+            Debug.log "msg" msg
+    in
+    case msg of
+        UrlChanged url ->
+            ( { model | page = fromRoute <| Route.parse url }, Cmd.none )
+
+        ClickedLink urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    case Route.parse url of
+                        Just route ->
+                            ( model, Route.push model.key route )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Browser.External href ->
+                    ( model, Browser.Navigation.load href )
 
 
 view : Model -> Document msg
 view model =
-    { title = "💌 Mes Petites Enveloppes"
+    { title = "Mes Petites Enveloppes"
     , body = [ body model ]
     }
 
 
 body : Model -> Html msg
-body { device } =
+body model =
     layout [ Font.family [ Font.typeface "Poppins" ] ] <|
         column
             [ width fill
             , height fill
             ]
-            [ header device
-            , content device
+            [ header model.device
+            , content model
             ]
+
+
+content : Model -> Element msg
+content { device, page } =
+    case page of
+        Home ->
+            Home.view device
+
+        Pricing ->
+            Pricing.view
+
+        NotFound ->
+            textColumn
+                [ width shrink, centerX, centerY, spacing 32, padding 32 ]
+                [ paragraph
+                    [ Font.center
+                    , Font.size 64
+                    ]
+                    [ text "😢" ]
+                , paragraph
+                    [ Font.center
+                    , Font.size 32
+                    , Font.family [ Font.typeface "Caveat" ]
+                    ]
+                    [ text "La page que vous avez demandée n'existe pas !" ]
+                ]
 
 
 header : Device -> Element msg
@@ -68,7 +158,7 @@ header { class, orientation } =
             el
                 [ width fill
                 , padding 16
-                , Background.color UI.secondary
+                , Background.color Color.primary
                 , Region.navigation
                 ]
                 (UI.logoWhite 28)
@@ -77,189 +167,19 @@ header { class, orientation } =
             row
                 [ width fill
                 , padding 32
-                , Background.color UI.secondary
+                , Background.color Color.primary
                 , Region.navigation
+                , spacing 64
                 ]
                 [ UI.logoWhite 48
+                , Route.link
+                    [ alignRight
+                    , Font.color Color.white
+                    , paddingXY 16 8
+                    , mouseOver [ Font.color Color.warmGray200 ]
+                    ]
+                    { route = Route.Pricing, label = text "Tarifs" }
                 , UI.callLink (alignRight :: UI.callLinkWhiteAttributes)
-                ]
-
-
-content : Device -> Element msg
-content { class, orientation } =
-    let
-        importContactParagraph : Element msg
-        importContactParagraph =
-            textColumn [ width fill, spacing 32, alignTop ]
-                [ paragraph
-                    [ Font.size 32
-                    , Font.color UI.secondary
-                    , Font.family [ Font.typeface "Lora" ]
-                    , Region.heading 1
-                    ]
-                    [ text "Importez vos contacts" ]
-                , textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ spacing 8 ]
-                        [ text "Importez directement vos adresses sous forme de tableau Excel."
-                        ]
-                    , paragraph [ spacing 8 ]
-                        [ text "Plusieurs formats sont possibles : "
-                        , el [ Font.family [ Font.monospace ] ] <| text ".xls"
-                        , text ", "
-                        , el [ Font.family [ Font.monospace ] ] <| text ".xlsx"
-                        , text ", ou "
-                        , el [ Font.family [ Font.monospace ] ] <| text ".csv"
-                        , text "."
-                        ]
-                    , paragraph [ spacing 8 ] [ text "Vous pouvez aussi ajouter une adresse manuellement." ]
-                    ]
-                ]
-
-        chooseEnvelopesParagraph : Element msg
-        chooseEnvelopesParagraph =
-            column [ width fill, spacing 32, alignTop ]
-                [ paragraph
-                    [ Font.size 32
-                    , Font.color UI.secondary
-                    , Font.family [ Font.typeface "Lora" ]
-                    , Region.heading 1
-                    ]
-                    [ text "Choisissez vos enveloppes" ]
-                , textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ spacing 8 ] [ text "Choisissez parmi une large gamme d'enveloppes de haute qualité : format, dimensions, couleur, fermeture ..." ]
-                    , paragraph [ spacing 8, Font.bold ] [ text "Vous avez déjà vos enveloppes ? Envoyez-les nous !" ]
-                    ]
-                ]
-
-        chooseFontParagraph : Element msg
-        chooseFontParagraph =
-            column [ width fill, spacing 32, alignTop ]
-                [ paragraph
-                    [ Font.size 32
-                    , Font.color UI.secondary
-                    , Font.family [ Font.typeface "Lora" ]
-                    , Region.heading 1
-                    ]
-                    [ text "Choisissez la police" ]
-                , textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ spacing 8 ] [ text "Le choix d'une police est très personnel." ]
-                    , paragraph [ spacing 8 ]
-                        [ UI.logoWithoutEmoji 28
-                        , text " vous propose un vaste choix de polices, sélectionnées une à une par nos soins."
-                        ]
-                    , paragraph [ spacing 8 ] [ text "Manuscrite ou en lettres d'imprimerie, vous trouverez votre bonheur !" ]
-                    , paragraph [ spacing 8 ] [ text "Choisissez aussi la couleur en accord avec celle de votre enveloppe et de votre thème." ]
-                    ]
-                ]
-
-        receiveEnvelopesParagraph : Element msg
-        receiveEnvelopesParagraph =
-            column [ width fill, spacing 32, alignTop ]
-                [ paragraph
-                    [ Font.size 32
-                    , Font.color UI.secondary
-                    , Font.family [ Font.typeface "Lora" ]
-                    , Region.heading 1
-                    ]
-                    [ text "Recevez vos enveloppes imprimées avec vos adresses" ]
-                , textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ spacing 8 ] [ text "Vous n'avez plus qu'à mettre sous pli ! 💌" ]
-                    ]
-                ]
-    in
-    case ( class, orientation ) of
-        ( Phone, Portrait ) ->
-            column
-                [ width fill
-                , height fill
-                , padding 32
-                , spacing 64
-                , Region.mainContent
-                ]
-                [ textColumn [ width fill, spacing 16 ]
-                    [ paragraph [ Font.size 24, Font.family [ Font.typeface "Lora" ] ] [ text "Vous avez mieux à faire que d'écrire vos adresses à la main !" ]
-                    , paragraph [] [ text "Mariage, naissance, baptême, communion ... Gagnez du temps sur les tâches chronophages, concentrez-vous sur l'essentiel." ]
-                    , paragraph []
-                        [ text "Avec "
-                        , UI.logoWithoutEmoji 28
-                        , text ", achetez vos enveloppes avec vos adresses imprimées dessus."
-                        ]
-                    ]
-                , importContactParagraph
-                , chooseEnvelopesParagraph
-                , chooseFontParagraph
-                , receiveEnvelopesParagraph
-                , column [ spacing 16, centerX ]
-                    [ el [ centerX ] <| text "Appelez-nous !"
-                    , UI.callLink UI.callLinkAttributes
-                    ]
-                ]
-
-        _ ->
-            column
-                [ width fill
-                , height fill
-                , padding 64
-                , spacing 64
-                , Region.mainContent
-                ]
-                [ textColumn [ width fill, spacing 16, Font.size 24 ]
-                    [ paragraph [ spacing 8 ] [ text "Vous avez mieux à faire que d'écrire vos adresses à la main !" ]
-                    , paragraph [ spacing 8 ] [ text "Mariage, naissance, baptême, communion ... Gagnez du temps sur les tâches chronophages, concentrez-vous sur l'essentiel." ]
-                    , paragraph [ spacing 8 ]
-                        [ text "Avec "
-                        , UI.logoWithoutEmoji 32
-                        , text ", recevez vos enveloppes avec vos adresses imprimées dessus."
-                        ]
-                    ]
-                , el [ width fill ] <|
-                    el
-                        [ width <| maximum 400 <| fill
-                        , centerX
-                        , height <| px 1
-                        , Background.color UI.secondary
-                        ]
-                        none
-                , row [ width fill, spacing 64 ]
-                    [ importContactParagraph
-                    , el
-                        [ Background.image "img/excel-apprendre.jpg"
-                        , width fill
-                        , height <| px 300
-                        ]
-                        none
-                    ]
-                , row [ width fill, spacing 64 ]
-                    [ chooseEnvelopesParagraph
-                    , el
-                        [ Background.image "img/joanna-kosinska-uGcDWKN91Fs-unsplash.jpg"
-                        , width fill
-                        , height <| px 300
-                        ]
-                        none
-                    ]
-                , row [ width fill, spacing 64 ]
-                    [ chooseFontParagraph
-                    , el
-                        [ Background.image "img/amador-loureiro-BVyNlchWqzs-unsplash.jpg"
-                        , width fill
-                        , height <| px 300
-                        ]
-                        none
-                    ]
-                , row [ width fill, spacing 64 ]
-                    [ receiveEnvelopesParagraph
-                    , el
-                        [ Background.uncropped "img/10176.jpg"
-                        , width fill
-                        , height <| px 300
-                        ]
-                        none
-                    ]
-                , column [ spacing 16, centerX ]
-                    [ el [ centerX ] <| text "Appelez-nous !"
-                    , UI.callLink UI.callLinkAttributes
-                    ]
                 ]
 
 
@@ -271,11 +191,13 @@ type alias Flags =
     }
 
 
-main : Program Flags Model msg
+main : Program Flags Model Msg
 main =
-    document
-        { init = \flags -> ( init flags, Cmd.none )
+    application
+        { init = init
+        , onUrlChange = UrlChanged
+        , onUrlRequest = ClickedLink
         , view = view
-        , update = \_ model -> ( model, Cmd.none )
+        , update = update
         , subscriptions = \_ -> Sub.none
         }
