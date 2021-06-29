@@ -1,4 +1,4 @@
-module Route exposing (..)
+module Route exposing (Route(..), link, parse, push)
 
 import Browser.Navigation exposing (Key, pushUrl)
 import Element exposing (Attribute, Element)

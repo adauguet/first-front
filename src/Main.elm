@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest, application)
 import Browser.Navigation exposing (Key)
@@ -17,7 +17,6 @@ import Element
         , height
         , layout
         , mouseOver
-        , none
         , padding
         , paddingXY
         , paragraph
@@ -50,7 +49,7 @@ type alias Model =
 
 type Page
     = Home
-    | Pricing
+    | Pricing Pricing.Model
     | NotFound
 
 
@@ -61,14 +60,14 @@ fromRoute mRoute =
             Home
 
         Just Route.Pricing ->
-            Pricing
+            Pricing Pricing.init
 
         Nothing ->
             NotFound
 
 
-init : Flags -> Url -> Key -> ( Model, Cmd msg )
-init { window } url key =
+init : Window -> Url -> Key -> ( Model, Cmd msg )
+init window url key =
     ( { key = key
       , device = Element.classifyDevice window
       , page = fromRoute <| Route.parse url
@@ -80,14 +79,11 @@ init { window } url key =
 type Msg
     = UrlChanged Url
     | ClickedLink UrlRequest
+    | GotPricingMsg Pricing.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        _ =
-            Debug.log "msg" msg
-    in
     case msg of
         UrlChanged url ->
             ( { model | page = fromRoute <| Route.parse url }, Cmd.none )
@@ -105,15 +101,27 @@ update msg model =
                 Browser.External href ->
                     ( model, Browser.Navigation.load href )
 
+        GotPricingMsg subMsg ->
+            case model.page of
+                Pricing subModel ->
+                    let
+                        m =
+                            Pricing.update subMsg subModel
+                    in
+                    ( { model | page = Pricing m }, Cmd.none )
 
-view : Model -> Document msg
+                _ ->
+                    ( model, Cmd.none )
+
+
+view : Model -> Document Msg
 view model =
     { title = "Mes Petites Enveloppes"
     , body = [ body model ]
     }
 
 
-body : Model -> Html msg
+body : Model -> Html Msg
 body model =
     layout [ Font.family [ Font.typeface "Poppins" ] ] <|
         column
@@ -125,14 +133,14 @@ body model =
             ]
 
 
-content : Model -> Element msg
+content : Model -> Element Msg
 content { device, page } =
     case page of
         Home ->
             Home.view device
 
-        Pricing ->
-            Pricing.view
+        Pricing model ->
+            Pricing.view model |> Element.map GotPricingMsg
 
         NotFound ->
             textColumn
@@ -171,7 +179,10 @@ header { class, orientation } =
                 , Region.navigation
                 , spacing 64
                 ]
-                [ UI.logoWhite 48
+                [ Route.link []
+                    { route = Route.Home
+                    , label = UI.logoWhite 48
+                    }
                 , Route.link
                     [ alignRight
                     , Font.color Color.white
@@ -183,15 +194,13 @@ header { class, orientation } =
                 ]
 
 
-type alias Flags =
-    { window :
-        { height : Int
-        , width : Int
-        }
+type alias Window =
+    { height : Int
+    , width : Int
     }
 
 
-main : Program Flags Model Msg
+main : Program Window Model Msg
 main =
     application
         { init = init
