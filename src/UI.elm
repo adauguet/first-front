@@ -24,7 +24,7 @@ logo size =
         [ Font.size size
         , Font.family [ Font.typeface "Caveat" ]
         ]
-        (text "💌 Mes Petites Enveloppes")
+        (text "💌  Mes Petites Enveloppes")
 
 
 logoWithoutEmoji : Int -> Element msg
@@ -43,7 +43,7 @@ logoWhite size =
         , Font.family [ Font.typeface "Caveat" ]
         , Font.color white
         ]
-        (text "💌 Mes Petites Enveloppes")
+        (text "💌  Mes Petites Enveloppes")
 
 
 secondary : Color
