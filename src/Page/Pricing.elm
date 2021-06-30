@@ -1,5 +1,6 @@
 module Page.Pricing exposing (Model, Msg, init, update, view)
 
+import Char exposing (isDigit)
 import Element
     exposing
         ( Attribute
@@ -79,7 +80,11 @@ update msg model =
             { model | selected = Just envelope }
 
         DidInputQuantity quantity ->
-            { model | quantity = quantity }
+            if String.all isDigit quantity then
+                { model | quantity = quantity }
+
+            else
+                model
 
 
 view : Model -> Element Msg
@@ -91,71 +96,81 @@ view model =
                 none
 
             Just envelope ->
-                column [ spacing 32, centerX ]
-                    [ Input.radio [ spacing 8 ]
-                        { onChange = DidSelectFormat
-                        , options =
-                            model.envelopes
-                                |> List.map .format
-                                |> List.uniqueBy Envelope.Format.toString
-                                |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
-                        , selected = model.format
-                        , label = Input.labelAbove [ paddingBottom 12 ] <| text "Format"
-                        }
-                    , case model.format of
-                        Just format_ ->
-                            Input.radio [ spacing 8 ]
-                                { onChange = DidSelectEnvelope
-                                , options =
-                                    model.envelopes
-                                        |> List.filter (\e -> Envelope.Format.equals e.format format_)
-                                        |> List.map colorOption
-                                , selected = model.selected
-                                , label = Input.labelAbove [ paddingBottom 12 ] <| text "Couleur"
-                                }
+                priceSimulator model envelope
+        ]
 
-                        Nothing ->
-                            none
-                    , Input.text [ Font.alignRight ]
-                        { onChange = DidInputQuantity
-                        , text = model.quantity
-                        , placeholder = Nothing
-                        , label = Input.labelAbove [ paddingBottom 12 ] <| text "Quantité"
-                        }
-                    , case String.toInt model.quantity of
-                        Just int ->
-                            let
-                                subTotal =
-                                    Envelope.Pricing.total int envelope.pricing
 
-                                shipping =
-                                    4.99
+priceSimulator : Model -> Envelope -> Element Msg
+priceSimulator model envelope =
+    column [ spacing 32, centerX ]
+        [ Input.radio [ spacing 8 ]
+            { onChange = DidSelectFormat
+            , options =
+                model.envelopes
+                    |> List.map .format
+                    |> List.uniqueBy Envelope.Format.toString
+                    |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
+            , selected = model.format
+            , label = Input.labelAbove [ paddingBottom 12 ] <| text "Format"
+            }
+        , case model.format of
+            Just format_ ->
+                Input.radio [ spacing 8 ]
+                    { onChange = DidSelectEnvelope
+                    , options =
+                        model.envelopes
+                            |> List.filter (\e -> Envelope.Format.equals e.format format_)
+                            |> List.map colorOption
+                    , selected = model.selected
+                    , label = Input.labelAbove [ paddingBottom 12 ] <| text "Couleur"
+                    }
 
-                                format float =
-                                    FormatNumber.format { frenchLocale | decimals = Exact 2, positiveSuffix = " €" } float
-                            in
-                            column [ width fill, spacing 16 ]
-                                [ row [ width fill, spacing 8 ]
-                                    [ text "Sous-total"
-                                    , el [ alignRight ] <| text <| format subTotal
-                                    ]
-                                , row [ width fill, spacing 8 ]
-                                    [ text "Frais de port"
-                                    , el [ alignRight ] <| text <| format shipping
-                                    ]
-                                , row [ width fill, spacing 8, Font.bold ]
-                                    [ text "Total"
-                                    , el [ alignRight ] <| text <| format (shipping + subTotal)
-                                    ]
-                                ]
+            Nothing ->
+                none
+        , Input.text [ Font.alignRight ]
+            { onChange = DidInputQuantity
+            , text = model.quantity
+            , placeholder = Nothing
+            , label = Input.labelAbove [ paddingBottom 12 ] <| text "Quantité"
+            }
+        , let
+            format : (Int -> Float) -> String
+            format compute =
+                case String.toInt model.quantity of
+                    Nothing ->
+                        "- €"
 
-                        Nothing ->
-                            none
-                    , textColumn [ width fill, spacing 16 ]
-                        [ paragraph [] [ text "Pour passer commande, appelez-nous 😉" ]
-                        , el [] <| UI.callLink UI.callLinkAttributes
-                        ]
-                    ]
+                    Just 0 ->
+                        "- €"
+
+                    Just quantity ->
+                        FormatNumber.format { frenchLocale | decimals = Exact 2, positiveSuffix = " €" } <| compute quantity
+
+            shipping : Float
+            shipping =
+                4.99
+
+            computeSubTotal =
+                Envelope.Pricing.total envelope.pricing
+          in
+          column [ width fill, spacing 16 ]
+            [ row [ width fill, spacing 8 ]
+                [ text "Sous-total"
+                , el [ alignRight ] <| text <| format computeSubTotal
+                ]
+            , row [ width fill, spacing 8 ]
+                [ text "Frais de port"
+                , el [ alignRight ] <| text <| format (\_ -> shipping)
+                ]
+            , row [ width fill, spacing 8, Font.bold ]
+                [ text "Total"
+                , el [ alignRight ] <| text <| format (\q -> computeSubTotal q + shipping)
+                ]
+            ]
+        , textColumn [ width fill, spacing 16 ]
+            [ paragraph [] [ text "Pour passer commande, appelez-nous 😉" ]
+            , el [] <| UI.callLink UI.callLinkAttributes
+            ]
         ]
 
 
@@ -179,9 +194,3 @@ colorOption envelope =
                 none
             , text <| Envelope.Color.toString envelope.color
             ]
-
-
-
--- unPair : (a -> b ->c) -> ( a, b ) -> c
--- unPair f ( a, b ) =
---     f a b

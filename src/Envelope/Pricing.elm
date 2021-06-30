@@ -11,8 +11,8 @@ type alias Pricing =
     ( Float, List Step )
 
 
-total : Int -> Pricing -> Float
-total quantity ( base, steps ) =
+total : Pricing -> Int -> Float
+total ( base, steps ) quantity =
     toFloat quantity * rate quantity base steps
 
 
