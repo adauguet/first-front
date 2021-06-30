@@ -1,4 +1,4 @@
-module Range exposing (..)
+module Range exposing (Range, fromPricing)
 
 import Envelope.Pricing exposing (Pricing, Step)
 

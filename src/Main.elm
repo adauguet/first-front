@@ -163,13 +163,25 @@ header : Device -> Element msg
 header { class, orientation } =
     case ( class, orientation ) of
         ( Phone, Portrait ) ->
-            el
-                [ width fill
-                , padding 16
-                , Background.color Color.primary
-                , Region.navigation
+            column [ width fill ]
+                [ el
+                    [ width fill
+                    , padding 16
+                    , Background.color Color.primary
+                    , Region.navigation
+                    ]
+                    (Route.link []
+                        { route = Route.Home
+                        , label = UI.logoWhite 24
+                        }
+                    )
+                , Route.link
+                    [ Font.color Color.primary
+                    , paddingXY 32 16
+                    , mouseOver [ Font.color Color.warmGray200 ]
+                    ]
+                    { route = Route.Pricing, label = text "Tarifs" }
                 ]
-                (UI.logoWhite 28)
 
         _ ->
             row
