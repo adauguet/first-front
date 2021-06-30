@@ -1,8 +1,8 @@
 module Pricing_test exposing (..)
 
+import Envelope.Pricing exposing (Pricing, Step, total)
 import Expect exposing (FloatingPointTolerance(..), within)
 import Fuzz exposing (intRange)
-import Pricing exposing (Pricing, Step, total)
 import Test exposing (Test, describe, fuzz)
 
 

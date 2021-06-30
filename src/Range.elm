@@ -1,6 +1,6 @@
 module Range exposing (..)
 
-import Pricing exposing (Pricing, Step)
+import Envelope.Pricing exposing (Pricing, Step)
 
 
 type alias Range =

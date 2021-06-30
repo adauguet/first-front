@@ -2,150 +2,186 @@ module Page.Pricing exposing (Model, Msg, init, update, view)
 
 import Element
     exposing
-        ( Element
+        ( Attribute
+        , Element
+        , alignRight
+        , centerX
         , column
-        , indexedTable
+        , el
+        , fill
+        , height
         , none
         , padding
+        , paddingEach
         , paragraph
-        , shrink
+        , px
+        , row
         , spacing
-        , spacingXY
-        , table
         , text
         , textColumn
+        , width
         )
+import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
-import Element.Input as Input
+import Element.Input as Input exposing (Option)
+import Envelope exposing (Envelope)
+import Envelope.Color exposing (Color(..))
+import Envelope.Format exposing (Format(..))
+import Envelope.Pricing
+import FormatNumber
+import FormatNumber.Locales exposing (Decimals(..), frenchLocale)
 import List.Extra as List
-import Pricing exposing (Pricing, Step)
-import Range
+import UI
+import UI.Color.Tailwind as Color
 
 
 type alias Model =
-    List ( String, Envelope )
+    { envelopes : List Envelope
+    , format : Maybe Format
+    , selected : Maybe Envelope
+    , quantity : String
+    }
 
 
 init : Model
 init =
-    [ ( ""
-      , { format = Square 140
-        , color = Ivory
-        , pricing =
-            ( 0.44
-            , [ Step 50 0.38
-              , Step 200 0.3
-              , Step 1000 0.26
-              ]
-            )
-        }
-      )
-    ]
+    let
+        envelopes =
+            Envelope.references
+    in
+    { envelopes = envelopes
+    , selected = List.head envelopes
+    , format = List.head envelopes |> Maybe.map .format
+    , quantity = "1"
+    }
 
 
 type Msg
-    = InputTestValue Int String
+    = DidSelectFormat Format
+    | DidSelectEnvelope Envelope
+    | DidInputQuantity String
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        InputTestValue index value ->
-            if String.all Char.isDigit value then
-                case List.getAt index model of
-                    Just ( _, envelope ) ->
-                        List.setAt index ( value, envelope ) model
+        DidSelectFormat format ->
+            { model
+                | format = Just format
+                , selected =
+                    model.envelopes
+                        |> List.filter (\envelope -> Envelope.Format.equals format envelope.format)
+                        |> List.head
+            }
 
-                    Nothing ->
-                        model
+        DidSelectEnvelope envelope ->
+            { model | selected = Just envelope }
 
-            else
-                model
+        DidInputQuantity quantity ->
+            { model | quantity = quantity }
 
 
 view : Model -> Element Msg
 view model =
-    textColumn [ padding 32, spacing 32 ]
-        [ paragraph [ Font.size 32 ] [ text "Tarifs" ]
-        , indexedTable []
-            { data = model
-            , columns =
-                [ { header = none
-                  , width = shrink
-                  , view = enveloppeView
-                  }
-                ]
-            }
-        ]
-
-
-enveloppeView : Int -> ( String, Envelope ) -> Element Msg
-enveloppeView index ( quantity, { format, color, pricing } ) =
-    column [ spacing 32 ]
-        [ text <| formatToString format
-        , text <| colorToString color
-        , table [ spacingXY 32 8 ]
-            { data = Range.fromPricing pricing
-            , columns =
-                [ { header = none
-                  , width = shrink
-                  , view =
-                        \{ from, to } ->
-                            text <|
-                                case to of
-                                    Just to_ ->
-                                        String.fromInt from ++ " - " ++ String.fromInt to_
-
-                                    Nothing ->
-                                        String.fromInt from ++ " +"
-                  }
-                , { header = none
-                  , width = shrink
-                  , view =
-                        \{ price } ->
-                            text <| String.fromFloat price ++ " €"
-                  }
-                ]
-            }
-        , Input.text []
-            { onChange = InputTestValue index
-            , text = quantity
-            , placeholder = Nothing
-            , label = Input.labelAbove [] <| text "Quantité"
-            }
-        , case String.toInt quantity of
-            Just int ->
-                text <| String.fromFloat (Pricing.total int pricing) ++ " €"
-
+    column [ padding 32, spacing 32, width fill ]
+        [ el [ Font.size 32 ] <| text "Tarifs"
+        , case model.selected of
             Nothing ->
                 none
+
+            Just envelope ->
+                column [ spacing 32, centerX ]
+                    [ Input.radio [ spacing 8 ]
+                        { onChange = DidSelectFormat
+                        , options =
+                            model.envelopes
+                                |> List.map .format
+                                |> List.uniqueBy Envelope.Format.toString
+                                |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
+                        , selected = model.format
+                        , label = Input.labelAbove [ paddingBottom 12 ] <| text "Format"
+                        }
+                    , case model.format of
+                        Just format_ ->
+                            Input.radio [ spacing 8 ]
+                                { onChange = DidSelectEnvelope
+                                , options =
+                                    model.envelopes
+                                        |> List.filter (\e -> Envelope.Format.equals e.format format_)
+                                        |> List.map colorOption
+                                , selected = model.selected
+                                , label = Input.labelAbove [ paddingBottom 12 ] <| text "Couleur"
+                                }
+
+                        Nothing ->
+                            none
+                    , Input.text [ Font.alignRight ]
+                        { onChange = DidInputQuantity
+                        , text = model.quantity
+                        , placeholder = Nothing
+                        , label = Input.labelAbove [ paddingBottom 12 ] <| text "Quantité"
+                        }
+                    , case String.toInt model.quantity of
+                        Just int ->
+                            let
+                                subTotal =
+                                    Envelope.Pricing.total int envelope.pricing
+
+                                shipping =
+                                    4.99
+
+                                format float =
+                                    FormatNumber.format { frenchLocale | decimals = Exact 2, positiveSuffix = " €" } float
+                            in
+                            column [ width fill, spacing 16 ]
+                                [ row [ width fill, spacing 8 ]
+                                    [ text "Sous-total"
+                                    , el [ alignRight ] <| text <| format subTotal
+                                    ]
+                                , row [ width fill, spacing 8 ]
+                                    [ text "Frais de port"
+                                    , el [ alignRight ] <| text <| format shipping
+                                    ]
+                                , row [ width fill, spacing 8, Font.bold ]
+                                    [ text "Total"
+                                    , el [ alignRight ] <| text <| format (shipping + subTotal)
+                                    ]
+                                ]
+
+                        Nothing ->
+                            none
+                    , textColumn [ width fill, spacing 16 ]
+                        [ paragraph [] [ text "Pour passer commande, appelez-nous 😉" ]
+                        , el [] <| UI.callLink UI.callLinkAttributes
+                        ]
+                    ]
         ]
 
 
-type alias Envelope =
-    { format : Format
-    , color : Color
-    , pricing : Pricing
-    }
+paddingBottom : Int -> Attribute msg
+paddingBottom int =
+    paddingEach { top = 0, left = 0, right = 0, bottom = int }
 
 
-type Format
-    = Square Int
+colorOption : Envelope -> Option Envelope Msg
+colorOption envelope =
+    Input.option envelope <|
+        row [ spacing 12 ]
+            [ el
+                [ width <| px 44
+                , height <| px 44
+                , Background.color <| Envelope.Color.toColor envelope.color
+                , Border.rounded 4
+                , Border.width 1
+                , Border.color Color.warmGray300
+                ]
+                none
+            , text <| Envelope.Color.toString envelope.color
+            ]
 
 
-formatToString : Format -> String
-formatToString format =
-    case format of
-        Square size ->
-            "Carrée " ++ String.fromInt size ++ " x " ++ String.fromInt size
 
-
-type Color
-    = Ivory
-
-
-colorToString : Color -> String
-colorToString color =
-    case color of
-        Ivory ->
-            "Ivoire"
+-- unPair : (a -> b ->c) -> ( a, b ) -> c
+-- unPair f ( a, b ) =
+--     f a b

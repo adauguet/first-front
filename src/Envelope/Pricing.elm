@@ -1,4 +1,4 @@
-module Pricing exposing (Pricing, Step, total)
+module Envelope.Pricing exposing (Pricing, Step, total)
 
 
 type alias Step =
