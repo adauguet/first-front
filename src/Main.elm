@@ -15,11 +15,14 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , layout
         , mouseOver
+        , none
         , padding
         , paddingXY
         , paragraph
+        , rgba255
         , row
         , shrink
         , spacing
@@ -28,9 +31,10 @@ import Element
         , width
         )
 import Element.Background as Background
+import Element.Events exposing (onClick)
 import Element.Font as Font
+import Element.Input as Input
 import Element.Region as Region
-import Html exposing (Html)
 import Page.Home as Home
 import Page.Pricing as Pricing
 import Route exposing (Route)
@@ -44,6 +48,7 @@ type alias Model =
     { key : Key
     , device : Device
     , page : Page
+    , showMenu : Bool
     }
 
 
@@ -71,6 +76,7 @@ init window url key =
     ( { key = key
       , device = Element.classifyDevice window
       , page = fromRoute <| Route.parse url
+      , showMenu = False
       }
     , Cmd.none
     )
@@ -80,6 +86,8 @@ type Msg
     = UrlChanged Url
     | ClickedLink UrlRequest
     | GotPricingMsg Pricing.Msg
+    | ClickedOpenMenu
+    | ClickedCloseMenu
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -113,24 +121,35 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        ClickedOpenMenu ->
+            ( { model | showMenu = True }, Cmd.none )
+
+        ClickedCloseMenu ->
+            ( { model | showMenu = False }, Cmd.none )
+
 
 view : Model -> Document Msg
 view model =
     { title = "Mes Petites Enveloppes"
-    , body = [ body model ]
+    , body =
+        [ layout
+            [ Font.family [ Font.typeface "Poppins" ]
+            , inFront <| modal model.showMenu
+            ]
+            (body model)
+        ]
     }
 
 
-body : Model -> Html Msg
+body : Model -> Element Msg
 body model =
-    layout [ Font.family [ Font.typeface "Poppins" ] ] <|
-        column
-            [ width fill
-            , height fill
-            ]
-            [ header model.device
-            , content model
-            ]
+    column
+        [ width fill
+        , height fill
+        ]
+        [ header model.device
+        , content model
+        ]
 
 
 content : Model -> Element Msg
@@ -159,28 +178,27 @@ content { device, page } =
                 ]
 
 
-header : Device -> Element msg
+header : Device -> Element Msg
 header { class, orientation } =
     case ( class, orientation ) of
         ( Phone, Portrait ) ->
             column [ width fill ]
-                [ el
+                [ row
                     [ width fill
                     , padding 16
                     , Background.color Color.primary
                     , Region.navigation
+                    , spacing 8
                     ]
-                    (Route.link []
+                    [ Route.link []
                         { route = Route.Home
                         , label = UI.logoWhite 24
                         }
-                    )
-                , Route.link
-                    [ Font.color Color.primary
-                    , paddingXY 32 16
-                    , mouseOver [ Font.color Color.warmGray200 ]
+                    , Input.button [ alignRight, Font.color Color.white ]
+                        { onPress = Just ClickedOpenMenu
+                        , label = UI.faIcon [] "fas fa-bars"
+                        }
                     ]
-                    { route = Route.Pricing, label = text "Tarifs" }
                 ]
 
         _ ->
@@ -204,6 +222,52 @@ header { class, orientation } =
                     { route = Route.Pricing, label = text "Tarifs" }
                 , UI.callLink (alignRight :: UI.callLinkWhiteAttributes)
                 ]
+
+
+modal : Bool -> Element Msg
+modal showMenu =
+    if showMenu then
+        menu
+
+    else
+        none
+
+
+menu : Element Msg
+menu =
+    column
+        [ width fill
+        , height fill
+        , onClick ClickedCloseMenu
+        , Background.color <| rgba255 0 0 0 0.2
+        ]
+        [ column
+            [ width fill
+            , Background.color Color.white
+            ]
+            [ row
+                [ width fill
+                , padding 16
+                , Region.navigation
+                , spacing 8
+                ]
+                [ Route.link []
+                    { route = Route.Home
+                    , label = el [ Font.color Color.primary ] <| UI.logo 24
+                    }
+                , Input.button [ alignRight, Font.color Color.primary ]
+                    { onPress = Just ClickedCloseMenu
+                    , label = UI.faIcon [] "fas fa-times"
+                    }
+                ]
+            , Route.link
+                [ Font.color Color.primary
+                , paddingXY 32 16
+                , mouseOver [ Font.color Color.warmGray200 ]
+                ]
+                { route = Route.Pricing, label = text "Tarifs" }
+            ]
+        ]
 
 
 type alias Window =

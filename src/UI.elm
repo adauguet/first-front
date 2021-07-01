@@ -2,6 +2,7 @@ module UI exposing
     ( callLink
     , callLinkAttributes
     , callLinkWhiteAttributes
+    , faIcon
     , logo
     , logoWhite
     , logoWithoutEmoji
@@ -12,6 +13,7 @@ import Element
         ( Attribute
         , Element
         , el
+        , html
         , link
         , mouseOver
         , paddingXY
@@ -20,6 +22,8 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html exposing (i)
+import Html.Attributes exposing (class)
 import UI.Color exposing (primary, white)
 import UI.Color.Tailwind as Color
 
@@ -82,3 +86,8 @@ callLinkWhiteAttributes =
         [ Background.color Color.warmGray100
         ]
     ]
+
+
+faIcon : List (Attribute msg) -> String -> Element msg
+faIcon attributes string =
+    el attributes <| html <| i [ class string ] []
