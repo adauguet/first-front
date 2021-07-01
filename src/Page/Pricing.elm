@@ -4,19 +4,27 @@ import Char exposing (isDigit)
 import Element
     exposing
         ( Attribute
+        , Device
+        , DeviceClass(..)
         , Element
+        , Orientation(..)
+        , alignBottom
         , alignRight
+        , alignTop
         , centerX
         , column
         , el
         , fill
         , height
+        , moveLeft
+        , moveUp
         , none
         , padding
         , paddingEach
         , paragraph
         , px
         , row
+        , shrink
         , spacing
         , text
         , textColumn
@@ -39,8 +47,8 @@ import UI.Color.Tailwind as Color
 
 type alias Model =
     { envelopes : List Envelope
-    , format : Maybe Format
-    , selected : Maybe Envelope
+    , format : Format
+    , selected : Envelope
     , quantity : String
     }
 
@@ -48,12 +56,12 @@ type alias Model =
 init : Model
 init =
     let
-        envelopes =
+        ( x, xs ) =
             Envelope.references
     in
-    { envelopes = envelopes
-    , selected = List.head envelopes
-    , format = List.head envelopes |> Maybe.map .format
+    { envelopes = x :: xs
+    , selected = x
+    , format = x.format
     , quantity = "1"
     }
 
@@ -68,16 +76,21 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         DidSelectFormat format ->
-            { model
-                | format = Just format
-                , selected =
+            let
+                mEnvelope =
                     model.envelopes
                         |> List.filter (\envelope -> Envelope.Format.equals format envelope.format)
                         |> List.head
-            }
+            in
+            case mEnvelope of
+                Just envelope ->
+                    { model | format = format, selected = envelope }
+
+                Nothing ->
+                    { model | format = format }
 
         DidSelectEnvelope envelope ->
-            { model | selected = Just envelope }
+            { model | selected = envelope }
 
         DidInputQuantity quantity ->
             if String.all isDigit quantity then
@@ -87,22 +100,44 @@ update msg model =
                 model
 
 
-view : Model -> Element Msg
-view model =
-    column [ padding 32, spacing 32, width fill ]
-        [ el [ Font.size 32 ] <| text "Tarifs"
-        , case model.selected of
-            Nothing ->
-                none
+view : Device -> Int -> Model -> Element Msg
+view device screenWidth model =
+    let
+        callUs =
+            column [ centerX, spacing 16 ]
+                [ textColumn [ width shrink, centerX ]
+                    [ paragraph [ centerX ] [ text "Pour passer commande, appelez-nous 😉" ]
+                    ]
+                , el [ centerX ] <| UI.callLink UI.callLinkAttributes
+                ]
+    in
+    case ( device.class, device.orientation ) of
+        ( Phone, Portrait ) ->
+            column [ padding 16, spacing 32, width fill ]
+                [ el [ Font.size 32 ] <| text "Tarifs"
+                , choices model
+                , preview (screenWidth - 32) model.selected
+                , quantityAndPrices model model.selected
+                , callUs
+                ]
 
-            Just envelope ->
-                priceSimulator model envelope
-        ]
+        _ ->
+            column [ padding 32, spacing 32, width fill ]
+                [ el [ Font.size 32 ] <| text "Tarifs"
+                , column [ centerX, spacing 64 ]
+                    [ row [ spacing 64 ]
+                        [ choices model
+                        , preview 500 model.selected
+                        ]
+                    , quantityAndPrices model model.selected
+                    , callUs
+                    ]
+                ]
 
 
-priceSimulator : Model -> Envelope -> Element Msg
-priceSimulator model envelope =
-    column [ spacing 32, centerX ]
+choices : Model -> Element Msg
+choices model =
+    column [ spacing 32, width fill, alignTop ]
         [ Input.radio [ spacing 8 ]
             { onChange = DidSelectFormat
             , options =
@@ -110,29 +145,84 @@ priceSimulator model envelope =
                     |> List.map .format
                     |> List.uniqueBy Envelope.Format.toString
                     |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
-            , selected = model.format
-            , label = Input.labelAbove [ paddingBottom 12 ] <| text "Format"
+            , selected = Just model.format
+            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
             }
-        , case model.format of
-            Just format_ ->
-                Input.radio [ spacing 8 ]
-                    { onChange = DidSelectEnvelope
-                    , options =
-                        model.envelopes
-                            |> List.filter (\e -> Envelope.Format.equals e.format format_)
-                            |> List.map colorOption
-                    , selected = model.selected
-                    , label = Input.labelAbove [ paddingBottom 12 ] <| text "Couleur"
-                    }
+        , Input.radio [ spacing 8 ]
+            { onChange = DidSelectEnvelope
+            , options =
+                model.envelopes
+                    |> List.filter (\e -> Envelope.Format.equals e.format model.format)
+                    |> List.map colorOption
+            , selected = Just model.selected
+            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Couleur"
+            }
+        ]
 
-            Nothing ->
+
+paddingBottom : Int -> Attribute msg
+paddingBottom int =
+    paddingEach { top = 0, left = 0, right = 0, bottom = int }
+
+
+colorOption : Envelope -> Option Envelope Msg
+colorOption envelope =
+    Input.option envelope <|
+        row [ spacing 12 ]
+            [ el
+                [ width <| px 44
+                , height <| px 44
+                , Background.color <| Envelope.Color.toColor envelope.color
+                , Border.rounded 4
+                , Border.width 1
+                , Border.color Color.warmGray300
+                ]
                 none
-        , Input.text [ Font.alignRight ]
-            { onChange = DidInputQuantity
-            , text = model.quantity
-            , placeholder = Nothing
-            , label = Input.labelAbove [ paddingBottom 12 ] <| text "Quantité"
-            }
+            , text <| Envelope.Color.toString envelope.color
+            ]
+
+
+preview : Int -> Envelope -> Element msg
+preview size envelope =
+    el
+        [ alignTop
+        , width <| px size
+        , height <| px size
+        , Background.color <| Envelope.Color.toColor envelope.color
+        , Border.rounded 4
+        , Border.width 1
+        , Border.color Color.warmGray300
+        ]
+    <|
+        textColumn
+            [ alignRight
+            , alignBottom
+            , moveUp (toFloat size / 4)
+            , moveLeft (toFloat size / 6)
+            , spacing 4
+            , Font.family [ Font.typeface "Caveat" ]
+            , width shrink
+            , Font.color Color.blue800
+            , Font.size (size // 22)
+            ]
+            [ paragraph [] [ text "Monsieur et Madame DAUGUET" ]
+            , paragraph [] [ text "2 impasse du Clos du Vieux Chêne" ]
+            , paragraph [] [ text "35800 DINARD" ]
+            ]
+
+
+quantityAndPrices : Model -> Envelope -> Element Msg
+quantityAndPrices model envelope =
+    column [ spacing 8, alignRight ]
+        [ row [ width fill, spacing 16 ]
+            [ el [ Font.bold, width fill ] <| text "Quantité"
+            , Input.text [ alignRight, width fill, Font.alignRight ]
+                { onChange = DidInputQuantity
+                , text = model.quantity
+                , placeholder = Nothing
+                , label = Input.labelHidden "Quantité"
+                }
+            ]
         , let
             format : (Int -> Float) -> String
             format compute =
@@ -167,30 +257,4 @@ priceSimulator model envelope =
                 , el [ alignRight ] <| text <| format (\q -> computeSubTotal q + shipping)
                 ]
             ]
-        , textColumn [ width fill, spacing 16 ]
-            [ paragraph [] [ text "Pour passer commande, appelez-nous 😉" ]
-            , el [] <| UI.callLink UI.callLinkAttributes
-            ]
         ]
-
-
-paddingBottom : Int -> Attribute msg
-paddingBottom int =
-    paddingEach { top = 0, left = 0, right = 0, bottom = int }
-
-
-colorOption : Envelope -> Option Envelope Msg
-colorOption envelope =
-    Input.option envelope <|
-        row [ spacing 12 ]
-            [ el
-                [ width <| px 44
-                , height <| px 44
-                , Background.color <| Envelope.Color.toColor envelope.color
-                , Border.rounded 4
-                , Border.width 1
-                , Border.color Color.warmGray300
-                ]
-                none
-            , text <| Envelope.Color.toString envelope.color
-            ]

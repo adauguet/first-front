@@ -47,6 +47,7 @@ import Url exposing (Url)
 type alias Model =
     { key : Key
     , device : Device
+    , screenWidth : Int
     , page : Page
     , showMenu : Bool
     }
@@ -75,6 +76,7 @@ init : Window -> Url -> Key -> ( Model, Cmd msg )
 init window url key =
     ( { key = key
       , device = Element.classifyDevice window
+      , screenWidth = window.width
       , page = fromRoute <| Route.parse url
       , showMenu = False
       }
@@ -153,13 +155,13 @@ body model =
 
 
 content : Model -> Element Msg
-content { device, page } =
+content { device, screenWidth, page } =
     case page of
         Home ->
             Home.view device
 
         Pricing model ->
-            Pricing.view model |> Element.map GotPricingMsg
+            Pricing.view device screenWidth model |> Element.map GotPricingMsg
 
         NotFound ->
             textColumn
@@ -211,7 +213,7 @@ header { class, orientation } =
                 ]
                 [ Route.link []
                     { route = Route.Home
-                    , label = UI.logoWhite 48
+                    , label = UI.logoWhite 36
                     }
                 , Route.link
                     [ alignRight
