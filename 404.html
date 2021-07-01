@@ -24,7 +24,6 @@
             // https://username.github.io/repo-name/?/one/two&a=b~and~c=d#qwe
             // Otherwise, leave pathSegmentsToKeep as 0.
             var pathSegmentsToKeep = 0;
-
             var l = window.location;
             l.replace(
                 l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
@@ -33,7 +32,6 @@
                 (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
                 l.hash
             );
-
         </script>
     </head>
 
