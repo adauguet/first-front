@@ -32,6 +32,7 @@ import Element
         , textColumn
         , transparent
         , width
+        , wrappedRow
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -121,7 +122,7 @@ view device screenWidth model =
         callUs =
             column [ spacing 16, centerX ]
                 [ textColumn [] [ paragraph [] [ text "Pour passer commande, contactez-nous ! 😉" ] ]
-                , row [ spacing 16 ]
+                , wrappedRow [ spacing 16 ]
                     [ link UI.callLinkAttributes
                         { url = "mailto:contact@mespetitesenveloppes.com"
                         , label = text "contact@mespetitesenveloppes.com"

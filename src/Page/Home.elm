@@ -23,6 +23,7 @@ import Element
         , text
         , textColumn
         , width
+        , wrappedRow
         )
 import Element.Background as Background
 import Element.Font as Font
@@ -206,7 +207,7 @@ view { class, orientation } =
                     ]
                 , column [ spacing 16, centerX ]
                     [ textColumn [] [ paragraph [] [ text "Pour en savoir plus, contactez-nous !" ] ]
-                    , row [ spacing 16 ]
+                    , wrappedRow [ spacing 16 ]
                         [ link UI.callLinkAttributes
                             { url = "mailto:contact@mespetitesenveloppes.com"
                             , label = text "contact@mespetitesenveloppes.com"
