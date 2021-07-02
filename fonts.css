@@ -19,24 +19,12 @@
     src: url('/fonts/DancingScript-Regular.ttf');
 }
 @font-face {
-    font-family: 'Gaegu';
-    src: url('./fonts/Gaegu-Regular.ttf');
-}
-@font-face {
-    font-family: 'Hi Melody';
-    src: url('./fonts/HiMelody-Regular.ttf');
-}
-@font-face {
     font-family: 'Loved by the King';
     src: url('./fonts/LovedbytheKing-Regular.ttf');
 }
 @font-face {
     font-family: 'Mr De Haviland';
     src: url('./fonts/MrDeHaviland-Regular.ttf');
-}
-@font-face {
-    font-family: 'Nanum Brush Script';
-    src: url('./fonts/NanumBrushScript-Regular.ttf');
 }
 @font-face {
     font-family: 'Over the Rainbow';
