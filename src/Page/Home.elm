@@ -12,6 +12,7 @@ import Element
         , el
         , fill
         , height
+        , link
         , maximum
         , none
         , padding
@@ -204,7 +205,13 @@ view { class, orientation } =
                         none
                     ]
                 , column [ spacing 16, centerX ]
-                    [ el [ centerX ] <| text "Appelez-nous !"
-                    , UI.callLink UI.callLinkAttributes
+                    [ textColumn [] [ paragraph [] [ text "Pour en savoir plus, contactez-nous !" ] ]
+                    , row [ spacing 16 ]
+                        [ link UI.callLinkAttributes
+                            { url = "mailto:contact@mespetitesenveloppes.com"
+                            , label = text "contact@mespetitesenveloppes.com"
+                            }
+                        , UI.callLink UI.callLinkAttributes
+                        ]
                     ]
                 ]

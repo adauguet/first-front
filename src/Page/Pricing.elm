@@ -16,6 +16,8 @@ import Element
         , el
         , fill
         , height
+        , inFront
+        , link
         , moveLeft
         , moveUp
         , none
@@ -28,6 +30,7 @@ import Element
         , spacing
         , text
         , textColumn
+        , transparent
         , width
         )
 import Element.Background as Background
@@ -38,6 +41,7 @@ import Envelope exposing (Envelope)
 import Envelope.Color exposing (Color(..))
 import Envelope.Format exposing (Format(..))
 import Envelope.Pricing
+import Font as Font_ exposing (Font)
 import FormatNumber
 import FormatNumber.Locales exposing (Decimals(..), frenchLocale)
 import List.Extra as List
@@ -50,8 +54,8 @@ type alias Model =
     , format : Format
     , selected : Envelope
     , quantity : String
-    , fonts : List String
-    , font : String
+    , fonts : List Font
+    , font : Font
     }
 
 
@@ -62,7 +66,7 @@ init =
             Envelope.references
 
         ( f, fs ) =
-            allFonts
+            Font_.all
     in
     { envelopes = x :: xs
     , selected = x
@@ -73,29 +77,11 @@ init =
     }
 
 
-allFonts : ( String, List String )
-allFonts =
-    ( "Amatic SC"
-    , [ "Annie Use Your Telescope"
-      , "Bilbo"
-      , "Caveat"
-      , "Coming Soon"
-      , "Dancing Script"
-      , "Loved by the King"
-      , "Mr De Haviland"
-      , "Over the Rainbow"
-      , "Stalemate"
-      , "Sue Ellen Fransisco"
-      , "Waiting for the Sunrise"
-      ]
-    )
-
-
 type Msg
     = DidSelectFormat Format
     | DidSelectEnvelope Envelope
     | DidInputQuantity String
-    | DidSelectFont String
+    | DidSelectFont Font
 
 
 update : Msg -> Model -> Model
@@ -133,11 +119,15 @@ view : Device -> Int -> Model -> Element Msg
 view device screenWidth model =
     let
         callUs =
-            column [ centerX, spacing 16 ]
-                [ textColumn [ width shrink, centerX ]
-                    [ paragraph [ centerX ] [ text "Pour passer commande, appelez-nous 😉" ]
+            column [ spacing 16, centerX ]
+                [ textColumn [] [ paragraph [] [ text "Pour passer commande, contactez-nous ! 😉" ] ]
+                , row [ spacing 16 ]
+                    [ link UI.callLinkAttributes
+                        { url = "mailto:contact@mespetitesenveloppes.com"
+                        , label = text "contact@mespetitesenveloppes.com"
+                        }
+                    , UI.callLink UI.callLinkAttributes
                     ]
-                , el [ centerX ] <| UI.callLink UI.callLinkAttributes
                 ]
     in
     case ( device.class, device.orientation ) of
@@ -145,7 +135,7 @@ view device screenWidth model =
             column [ padding 16, spacing 32, width fill ]
                 [ el [ Font.size 32 ] <| text "Tarifs"
                 , choices model
-                , preview (screenWidth - 32) model.selected model.font
+                , preview 8 (screenWidth - 32) model.selected model.font
                 , quantityAndPrices model model.selected
                 , callUs
                 ]
@@ -156,7 +146,7 @@ view device screenWidth model =
                 , column [ centerX, spacing 64 ]
                     [ row [ spacing 64 ]
                         [ choices model
-                        , preview 500 model.selected model.font
+                        , preview 12 500 model.selected model.font
                         ]
                     , quantityAndPrices model model.selected
                     , callUs
@@ -188,7 +178,18 @@ choices model =
             }
         , Input.radio [ spacing 8 ]
             { onChange = DidSelectFont
-            , options = model.fonts |> List.map (\font -> Input.option font (el [ Font.family [ Font.typeface font ] ] <| text font))
+            , options =
+                model.fonts
+                    |> List.map
+                        (\font ->
+                            Input.option font <|
+                                el
+                                    [ Font.family [ Font_.typeface font ]
+                                    , Font.size font.size
+                                    ]
+                                <|
+                                    text font.name
+                        )
             , selected = Just model.font
             , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Police"
             }
@@ -217,33 +218,73 @@ colorOption envelope =
             ]
 
 
-preview : Int -> Envelope -> String -> Element msg
-preview size envelope font =
-    el
-        [ alignTop
-        , width <| px size
-        , height <| px size
-        , Background.color <| Envelope.Color.toColor envelope.color
-        , Border.rounded 4
-        , Border.width 1
-        , Border.color Color.warmGray300
+preview : Int -> Int -> Envelope -> Font -> Element msg
+preview scaleFontSize size envelope font =
+    let
+        oneCmToPx =
+            case envelope.format of
+                Square s ->
+                    size * 10 // s
+
+                Rectangle w _ ->
+                    size * 10 // w
+
+        fontSize =
+            size * font.previewSize // 500
+    in
+    column
+        [ width fill, spacing 16 ]
+        [ column [ spacing 16 ]
+            [ el
+                [ alignTop
+                , width <| px size
+                , height <| px size
+                , Background.color <| Envelope.Color.toColor envelope.color
+                , Border.rounded 4
+                , Border.width 1
+                , Border.color Color.warmGray300
+                ]
+              <|
+                textColumn
+                    [ alignRight
+                    , alignBottom
+                    , moveUp (toFloat size / 3.5)
+                    , moveLeft (toFloat size / 6.5)
+                    , spacing 4
+                    , Font.family [ Font_.typeface font ]
+                    , width shrink
+                    , Font.color Color.blue800
+                    , Font.size fontSize
+                    , padding 8
+                    ]
+                    [ paragraph [] [ text "Monsieur et Madame MACRON" ]
+                    , paragraph [] [ text "55 Rue du Faubourg Saint-Honoré" ]
+                    , paragraph [] [ text "75008 PARIS" ]
+                    ]
+            , column [ alignRight, width <| px oneCmToPx ]
+                [ el
+                    [ width fill
+                    , height <| px 4
+                    , Border.color Color.warmGray300
+                    , Border.widthEach { top = 0, left = 1, right = 1, bottom = 1 }
+                    , inFront <| el [ centerX, moveUp 10, Font.size scaleFontSize, Font.color Color.warmGray400 ] <| text "1 cm"
+                    ]
+                    none
+                , el
+                    [ width fill
+                    , height <| px 3
+                    , Border.color Color.warmGray300
+                    , Border.widthEach { top = 0, left = 1, right = 1, bottom = 0 }
+                    ]
+                    none
+                ]
+            ]
+        , textColumn [ width fill ]
+            [ paragraph [ Font.color Color.warmGray400, Font.size 12, transparent font.isAllCapsCompatible ]
+                [ text "⚠️ Les mots en lettres majuscules sont peu lisibles avec cette police."
+                ]
+            ]
         ]
-    <|
-        textColumn
-            [ alignRight
-            , alignBottom
-            , moveUp (toFloat size / 4)
-            , moveLeft (toFloat size / 6)
-            , spacing 4
-            , Font.family [ Font.typeface font ]
-            , width shrink
-            , Font.color Color.blue800
-            , Font.size (size // 22)
-            ]
-            [ paragraph [] [ text "Monsieur et Madame MACRON" ]
-            , paragraph [] [ text "55 Rue du Faubourg Saint-Honoré" ]
-            , paragraph [] [ text "75008 PARIS" ]
-            ]
 
 
 quantityAndPrices : Model -> Envelope -> Element Msg
