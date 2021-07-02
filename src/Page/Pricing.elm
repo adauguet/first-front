@@ -50,6 +50,8 @@ type alias Model =
     , format : Format
     , selected : Envelope
     , quantity : String
+    , fonts : List String
+    , font : String
     }
 
 
@@ -58,18 +60,45 @@ init =
     let
         ( x, xs ) =
             Envelope.references
+
+        ( f, fs ) =
+            allFonts
     in
     { envelopes = x :: xs
     , selected = x
     , format = x.format
     , quantity = "1"
+    , fonts = f :: fs
+    , font = f
     }
+
+
+allFonts : ( String, List String )
+allFonts =
+    ( "Amatic SC"
+    , [ "Annie Use Your Telescope"
+      , "Bilbo"
+      , "Caveat"
+      , "Coming Soon"
+      , "Dancing Script"
+      , "Gaegu"
+      , "Hi Melody"
+      , "Loved by the King"
+      , "Mr De Haviland"
+      , "Nanum Brush Script"
+      , "Over the Rainbow"
+      , "Stalemate"
+      , "Sue Ellen Fransisco"
+      , "Waiting for the Sunrise"
+      ]
+    )
 
 
 type Msg
     = DidSelectFormat Format
     | DidSelectEnvelope Envelope
     | DidInputQuantity String
+    | DidSelectFont String
 
 
 update : Msg -> Model -> Model
@@ -99,6 +128,9 @@ update msg model =
             else
                 model
 
+        DidSelectFont font ->
+            { model | font = font }
+
 
 view : Device -> Int -> Model -> Element Msg
 view device screenWidth model =
@@ -116,7 +148,7 @@ view device screenWidth model =
             column [ padding 16, spacing 32, width fill ]
                 [ el [ Font.size 32 ] <| text "Tarifs"
                 , choices model
-                , preview (screenWidth - 32) model.selected
+                , preview (screenWidth - 32) model.selected model.font
                 , quantityAndPrices model model.selected
                 , callUs
                 ]
@@ -127,7 +159,7 @@ view device screenWidth model =
                 , column [ centerX, spacing 64 ]
                     [ row [ spacing 64 ]
                         [ choices model
-                        , preview 500 model.selected
+                        , preview 500 model.selected model.font
                         ]
                     , quantityAndPrices model model.selected
                     , callUs
@@ -157,6 +189,12 @@ choices model =
             , selected = Just model.selected
             , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Couleur"
             }
+        , Input.radio [ spacing 8 ]
+            { onChange = DidSelectFont
+            , options = model.fonts |> List.map (\font -> Input.option font (el [ Font.family [ Font.typeface font ] ] <| text font))
+            , selected = Just model.font
+            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Police"
+            }
         ]
 
 
@@ -182,8 +220,8 @@ colorOption envelope =
             ]
 
 
-preview : Int -> Envelope -> Element msg
-preview size envelope =
+preview : Int -> Envelope -> String -> Element msg
+preview size envelope font =
     el
         [ alignTop
         , width <| px size
@@ -200,7 +238,7 @@ preview size envelope =
             , moveUp (toFloat size / 4)
             , moveLeft (toFloat size / 6)
             , spacing 4
-            , Font.family [ Font.typeface "Caveat" ]
+            , Font.family [ Font.typeface font ]
             , width shrink
             , Font.color Color.blue800
             , Font.size (size // 22)
