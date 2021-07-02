@@ -205,9 +205,9 @@ preview size envelope =
             , Font.color Color.blue800
             , Font.size (size // 22)
             ]
-            [ paragraph [] [ text "Monsieur et Madame DAUGUET" ]
-            , paragraph [] [ text "2 impasse du Clos du Vieux Chêne" ]
-            , paragraph [] [ text "35800 DINARD" ]
+            [ paragraph [] [ text "Monsieur et Madame MACRON" ]
+            , paragraph [] [ text "55 Rue du Faubourg Saint-Honoré" ]
+            , paragraph [] [ text "75008 PARIS" ]
             ]
 
 
