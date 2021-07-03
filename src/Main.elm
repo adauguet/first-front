@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest, application)
+import Browser.Events
 import Browser.Navigation exposing (Key)
 import Element
     exposing
@@ -90,6 +91,7 @@ type Msg
     | GotPricingMsg Pricing.Msg
     | ClickedOpenMenu
     | ClickedCloseMenu
+    | GotNewWindow Int Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -128,6 +130,9 @@ update msg model =
 
         ClickedCloseMenu ->
             ( { model | showMenu = False }, Cmd.none )
+
+        GotNewWindow width height ->
+            ( { model | device = Element.classifyDevice { width = width, height = height } }, Cmd.none )
 
 
 view : Model -> Document Msg
@@ -286,5 +291,10 @@ main =
         , onUrlRequest = ClickedLink
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Browser.Events.onResize GotNewWindow
