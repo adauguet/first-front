@@ -58,7 +58,7 @@ view { class, orientation } =
             textColumn [ width fill, spacing 32, alignTop ]
                 [ paragraph
                     [ Font.size 32
-                    , Font.color Color.primary
+                    , Font.color Color.primary500
                     , Font.family [ Font.typeface "Lora" ]
                     , Region.heading 1
                     ]
@@ -76,7 +76,6 @@ view { class, orientation } =
                         , el [ Font.family [ Font.monospace ] ] <| text ".csv"
                         , text "."
                         ]
-                    , paragraph [ spacing 8 ] [ text "Vous pouvez aussi ajouter une adresse manuellement." ]
                     ]
                 ]
 
@@ -85,7 +84,7 @@ view { class, orientation } =
             column [ width fill, spacing 32, alignTop ]
                 [ paragraph
                     [ Font.size 32
-                    , Font.color Color.primary
+                    , Font.color Color.primary500
                     , Font.family [ Font.typeface "Lora" ]
                     , Region.heading 1
                     ]
@@ -101,7 +100,7 @@ view { class, orientation } =
             column [ width fill, spacing 32, alignTop ]
                 [ paragraph
                     [ Font.size 32
-                    , Font.color Color.primary
+                    , Font.color Color.primary500
                     , Font.family [ Font.typeface "Lora" ]
                     , Region.heading 1
                     ]
@@ -113,7 +112,6 @@ view { class, orientation } =
                         , text " vous propose un vaste choix de polices, sélectionnées une à une par nos soins."
                         ]
                     , paragraph [ spacing 8 ] [ text "Manuscrite ou en lettres d'imprimerie, vous trouverez votre bonheur !" ]
-                    , paragraph [ spacing 8 ] [ text "Choisissez aussi la couleur en accord avec celle de votre enveloppe et de votre thème." ]
                     ]
                 ]
 
@@ -122,7 +120,7 @@ view { class, orientation } =
             column [ width fill, spacing 32, alignTop ]
                 [ paragraph
                     [ Font.size 32
-                    , Font.color Color.primary
+                    , Font.color Color.primary500
                     , Font.family [ Font.typeface "Lora" ]
                     , Region.heading 1
                     ]
@@ -166,7 +164,7 @@ view { class, orientation } =
                         [ width <| maximum 400 <| fill
                         , centerX
                         , height <| px 1
-                        , Background.color Color.primary
+                        , Background.color Color.primary500
                         ]
                         none
                 , row [ width fill, spacing 64 ]

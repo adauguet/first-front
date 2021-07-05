@@ -14,15 +14,18 @@ import Element
         , centerX
         , column
         , el
+        , explain
         , fill
         , height
         , inFront
         , link
+        , mouseOver
         , moveLeft
         , moveUp
         , none
         , padding
         , paddingEach
+        , paddingXY
         , paragraph
         , px
         , row
@@ -32,7 +35,6 @@ import Element
         , textColumn
         , transparent
         , width
-        , wrappedRow
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -47,6 +49,7 @@ import FormatNumber
 import FormatNumber.Locales exposing (Decimals(..), frenchLocale)
 import List.Extra as List
 import UI
+import UI.Color as Color
 import UI.Color.Tailwind as Color
 
 
@@ -120,24 +123,40 @@ view : Device -> Int -> Model -> Element Msg
 view device screenWidth model =
     let
         callUs =
-            column [ spacing 16, centerX ]
-                [ textColumn [] [ paragraph [] [ text "Pour passer commande, contactez-nous ! 😉" ] ]
-                , wrappedRow [ spacing 16 ]
-                    [ link UI.callLinkAttributes
-                        { url = "mailto:contact@mespetitesenveloppes.com"
-                        , label = text "contact@mespetitesenveloppes.com"
-                        }
-                    , UI.callLink UI.callLinkAttributes
+            column [ width fill, spacing 15 ]
+                [ textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
+                , link
+                    [ width fill
+                    , Font.center
+                    , Font.color Color.white
+                    , Background.color Color.primary500
+                    , paddingXY 8 8
+                    , Border.rounded 4
+                    ]
+                    { url = "mailto:contact@mespetitesenveloppes.com"
+                    , label = text "contact@mespetitesenveloppes.com"
+                    }
+                , UI.callLink
+                    [ width fill
+                    , Font.center
+                    , Font.color Color.white
+                    , Background.color Color.primary500
+                    , paddingXY 8 8
+                    , Border.rounded 4
                     ]
                 ]
     in
     case ( device.class, device.orientation ) of
         ( Phone, Portrait ) ->
-            column [ padding 16, spacing 32, width fill ]
+            column
+                [ padding 16
+                , spacing 32
+                , width fill
+                ]
                 [ el [ Font.size 32 ] <| text "Tarifs"
                 , choices model
                 , preview 8 (screenWidth - 32) model.selected model.font
-                , quantityAndPrices model model.selected
+                , quantityAndPrices model
                 , callUs
                 ]
 
@@ -149,7 +168,7 @@ view device screenWidth model =
                         [ choices model
                         , preview 12 500 model.selected model.font
                         ]
-                    , quantityAndPrices model model.selected
+                    , quantityAndPrices model
                     , callUs
                     ]
                 ]
@@ -234,7 +253,11 @@ preview scaleFontSize size envelope font =
             size * font.previewSize // 500
     in
     column
-        [ width fill, spacing 16 ]
+        [ width fill
+        , spacing 16
+
+        -- , explain Debug.todo
+        ]
         [ column [ spacing 16 ]
             [ el
                 [ alignTop
@@ -288,9 +311,9 @@ preview scaleFontSize size envelope font =
         ]
 
 
-quantityAndPrices : Model -> Envelope -> Element Msg
-quantityAndPrices model envelope =
-    column [ spacing 8, alignRight ]
+quantityAndPrices : Model -> Element Msg
+quantityAndPrices model =
+    column [ width fill, spacing 8 ]
         [ row [ width fill, spacing 16 ]
             [ el [ Font.bold, width fill ] <| text "Quantité"
             , Input.text [ alignRight, width fill, Font.alignRight ]
@@ -318,7 +341,7 @@ quantityAndPrices model envelope =
                 4.99
 
             computeSubTotal =
-                Envelope.Pricing.total envelope.pricing
+                Envelope.Pricing.total model.selected.pricing
           in
           column [ width fill, spacing 16 ]
             [ row [ width fill, spacing 8 ]

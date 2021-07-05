@@ -24,7 +24,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Html exposing (i)
 import Html.Attributes exposing (class)
-import UI.Color exposing (primary, white)
+import UI.Color exposing (primary500, white)
 import UI.Color.Tailwind as Color
 
 
@@ -67,7 +67,7 @@ callLink attributes =
 
 callLinkAttributes : List (Attribute msg)
 callLinkAttributes =
-    [ Background.color primary
+    [ Background.color primary500
     , paddingXY 32 16
     , Border.rounded 5
     , Font.color white
@@ -80,7 +80,7 @@ callLinkWhiteAttributes =
     [ Background.color white
     , paddingXY 32 16
     , Border.rounded 5
-    , Font.color primary
+    , Font.color primary500
     , Font.semiBold
     , mouseOver
         [ Background.color Color.warmGray100

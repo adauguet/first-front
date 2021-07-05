@@ -23,16 +23,16 @@ suite =
     describe "The Pricing module"
         [ describe "Pricing.total"
             [ fuzz (intRange 1 49) "computes the right amount for a quantity between 1 and 49" <|
-                \quantity -> within (Absolute 0) (total quantity pricing) (toFloat quantity * 0.18)
+                \quantity -> within (Absolute 0) (total pricing quantity) (toFloat quantity * 0.18)
             , fuzz (intRange 50 199) "computes the right amount for a quantity between 50 and 199" <|
-                \quantity -> within (Absolute 0) (total quantity pricing) (toFloat quantity * 0.16)
+                \quantity -> within (Absolute 0) (total pricing quantity) (toFloat quantity * 0.16)
             , fuzz (intRange 200 999) "computes the right amount for a quantity between 200 and 999" <|
-                \quantity -> within (Absolute 0) (total quantity pricing) (toFloat quantity * 0.12)
+                \quantity -> within (Absolute 0) (total pricing quantity) (toFloat quantity * 0.12)
             , fuzz (intRange 1000 4999) "computes the right amount for a quantity between 1000 and 4999" <|
-                \quantity -> within (Absolute 0) (total quantity pricing) (toFloat quantity * 0.11)
+                \quantity -> within (Absolute 0) (total pricing quantity) (toFloat quantity * 0.11)
             , fuzz (intRange 5000 9999) "computes the right amount for a quantity between 5000 and 9999" <|
-                \quantity -> within (Absolute 0) (total quantity pricing) (toFloat quantity * 0.09)
+                \quantity -> within (Absolute 0) (total pricing quantity) (toFloat quantity * 0.09)
             , fuzz (intRange 10000 100000) "computes the right amount for a quantity between 10000 and 100000" <|
-                \quantity -> within (Absolute 0) (total quantity pricing) (toFloat quantity * 0.08)
+                \quantity -> within (Absolute 0) (total pricing quantity) (toFloat quantity * 0.08)
             ]
         ]

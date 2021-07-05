@@ -141,6 +141,7 @@ view model =
     , body =
         [ layout
             [ Font.family [ Font.typeface "Poppins" ]
+            , Font.size 14
             , inFront <| modal model.showMenu
             ]
             (body model)
@@ -193,7 +194,7 @@ header { class, orientation } =
                 [ row
                     [ width fill
                     , padding 16
-                    , Background.color Color.primary
+                    , Background.color Color.primary500
                     , Region.navigation
                     , spacing 8
                     ]
@@ -212,7 +213,7 @@ header { class, orientation } =
             row
                 [ width fill
                 , padding 32
-                , Background.color Color.primary
+                , Background.color Color.primary500
                 , Region.navigation
                 , spacing 64
                 ]
@@ -260,15 +261,15 @@ menu =
                 ]
                 [ Route.link []
                     { route = Route.Home
-                    , label = el [ Font.color Color.primary ] <| UI.logo 24
+                    , label = el [ Font.color Color.primary500 ] <| UI.logo 24
                     }
-                , Input.button [ alignRight, Font.color Color.primary ]
+                , Input.button [ alignRight, Font.color Color.primary500 ]
                     { onPress = Just ClickedCloseMenu
                     , label = UI.faIcon [] "fas fa-times"
                     }
                 ]
             , Route.link
-                [ Font.color Color.primary
+                [ Font.color Color.primary500
                 , paddingXY 32 16
                 , mouseOver [ Font.color Color.warmGray200 ]
                 ]
