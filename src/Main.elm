@@ -137,11 +137,20 @@ update msg model =
 
 view : Model -> Document Msg
 view model =
+    let
+        fontSize =
+            case model.device.class of
+                Phone ->
+                    14
+
+                _ ->
+                    20
+    in
     { title = "Mes Petites Enveloppes"
     , body =
         [ layout
             [ Font.family [ Font.typeface "Poppins" ]
-            , Font.size 14
+            , Font.size fontSize
             , inFront <| modal model.showMenu
             ]
             (body model)
@@ -207,6 +216,27 @@ header { class, orientation } =
                         , label = UI.faIcon [] "fas fa-bars"
                         }
                     ]
+                ]
+
+        ( Phone, Landscape ) ->
+            row
+                [ width fill
+                , padding 16
+                , Background.color Color.primary500
+                , Region.navigation
+                , spacing 8
+                ]
+                [ Route.link []
+                    { route = Route.Home
+                    , label = UI.logoWhite 24
+                    }
+                , Route.link
+                    [ alignRight
+                    , Font.color Color.white
+                    , paddingXY 16 8
+                    , mouseOver [ Font.color Color.warmGray200 ]
+                    ]
+                    { route = Route.Pricing, label = text "Tarifs" }
                 ]
 
         _ ->

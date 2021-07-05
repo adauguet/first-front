@@ -14,12 +14,10 @@ import Element
         , centerX
         , column
         , el
-        , explain
         , fill
         , height
         , inFront
         , link
-        , mouseOver
         , moveLeft
         , moveUp
         , none
@@ -123,31 +121,38 @@ view : Device -> Int -> Model -> Element Msg
 view device screenWidth model =
     let
         callUs =
-            column [ width fill, spacing 15 ]
-                [ textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
-                , link
+            let
+                linkAttributes =
                     [ width fill
                     , Font.center
                     , Font.color Color.white
                     , Background.color Color.primary500
-                    , paddingXY 8 8
                     , Border.rounded 4
                     ]
-                    { url = "mailto:contact@mespetitesenveloppes.com"
-                    , label = text "contact@mespetitesenveloppes.com"
-                    }
-                , UI.callLink
-                    [ width fill
-                    , Font.center
-                    , Font.color Color.white
-                    , Background.color Color.primary500
-                    , paddingXY 8 8
-                    , Border.rounded 4
-                    ]
-                ]
+            in
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    column [ width fill, spacing 16 ]
+                        [ textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
+                        , link (paddingXY 12 12 :: linkAttributes)
+                            { url = "mailto:contact@mespetitesenveloppes.com"
+                            , label = text "contact@mespetitesenveloppes.com"
+                            }
+                        , UI.callLink (paddingXY 12 12 :: linkAttributes)
+                        ]
+
+                _ ->
+                    column [ centerX, spacing 16 ]
+                        [ textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
+                        , link (paddingXY 32 16 :: linkAttributes)
+                            { url = "mailto:contact@mespetitesenveloppes.com"
+                            , label = text "contact@mespetitesenveloppes.com"
+                            }
+                        , UI.callLink (paddingXY 32 16 :: linkAttributes)
+                        ]
     in
     case ( device.class, device.orientation ) of
-        ( Phone, Portrait ) ->
+        ( Phone, _ ) ->
             column
                 [ padding 16
                 , spacing 32
@@ -167,6 +172,7 @@ view device screenWidth model =
                     [ row [ spacing 64 ]
                         [ choices model
                         , preview 12 500 model.selected model.font
+                        , fontSelect model.fonts model.font
                         ]
                     , quantityAndPrices model
                     , callUs
@@ -196,24 +202,28 @@ choices model =
             , selected = Just model.selected
             , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Couleur"
             }
-        , Input.radio [ spacing 8 ]
-            { onChange = DidSelectFont
-            , options =
-                model.fonts
-                    |> List.map
-                        (\font ->
-                            Input.option font <|
-                                el
-                                    [ Font.family [ Font_.typeface font ]
-                                    , Font.size font.size
-                                    ]
-                                <|
-                                    text font.name
-                        )
-            , selected = Just model.font
-            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Police"
-            }
         ]
+
+
+fontSelect : List Font -> Font -> Element Msg
+fontSelect fonts selected =
+    Input.radio [ spacing 8 ]
+        { onChange = DidSelectFont
+        , options =
+            fonts
+                |> List.map
+                    (\font ->
+                        Input.option font <|
+                            el
+                                [ Font.family [ Font_.typeface font ]
+                                , Font.size font.size
+                                ]
+                            <|
+                                text font.name
+                    )
+        , selected = Just selected
+        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Police"
+        }
 
 
 paddingBottom : Int -> Attribute msg
@@ -255,8 +265,6 @@ preview scaleFontSize size envelope font =
     column
         [ width fill
         , spacing 16
-
-        -- , explain Debug.todo
         ]
         [ column [ spacing 16 ]
             [ el

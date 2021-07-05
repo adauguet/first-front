@@ -67,15 +67,6 @@ view { class, orientation } =
                     [ paragraph [ spacing 8 ]
                         [ text "Importez directement vos adresses sous forme de tableau Excel."
                         ]
-                    , paragraph [ spacing 8 ]
-                        [ text "Plusieurs formats sont possibles : "
-                        , el [ Font.family [ Font.monospace ] ] <| text ".xls"
-                        , text ", "
-                        , el [ Font.family [ Font.monospace ] ] <| text ".xlsx"
-                        , text ", ou "
-                        , el [ Font.family [ Font.monospace ] ] <| text ".csv"
-                        , text "."
-                        ]
                     ]
                 ]
 
