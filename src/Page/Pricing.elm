@@ -160,6 +160,7 @@ view device screenWidth model =
                 ]
                 [ el [ Font.size 32 ] <| text "Tarifs"
                 , choices model
+                , fontSelect model.fonts model.font
                 , preview 8 (screenWidth - 32) model.selected model.font
                 , quantityAndPrices model
                 , callUs
