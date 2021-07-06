@@ -129,27 +129,32 @@ view device screenWidth model =
                     , Background.color Color.primary500
                     , Border.rounded 4
                     ]
+
+                wording =
+                    textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
+
+                linkConfiguration =
+                    { url = "mailto:contact@mespetitesenveloppes.com"
+                    , label = text "contact@mespetitesenveloppes.com"
+                    }
             in
             case ( device.class, device.orientation ) of
                 ( Phone, Portrait ) ->
                     column [ width fill, spacing 16 ]
-                        [ textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
-                        , link (paddingXY 12 12 :: linkAttributes)
-                            { url = "mailto:contact@mespetitesenveloppes.com"
-                            , label = text "contact@mespetitesenveloppes.com"
-                            }
+                        [ wording
+                        , link (paddingXY 12 12 :: linkAttributes) linkConfiguration
                         , UI.callLink (paddingXY 12 12 :: linkAttributes)
                         ]
 
                 _ ->
                     column [ centerX, spacing 16 ]
-                        [ textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
-                        , link (paddingXY 32 16 :: linkAttributes)
-                            { url = "mailto:contact@mespetitesenveloppes.com"
-                            , label = text "contact@mespetitesenveloppes.com"
-                            }
+                        [ wording
+                        , link (paddingXY 32 16 :: linkAttributes) linkConfiguration
                         , UI.callLink (paddingXY 32 16 :: linkAttributes)
                         ]
+
+        title =
+            el [ Font.size 32 ] <| text "Tarifs"
     in
     case ( device.class, device.orientation ) of
         ( Phone, _ ) ->
@@ -158,20 +163,60 @@ view device screenWidth model =
                 , spacing 32
                 , width fill
                 ]
-                [ el [ Font.size 32 ] <| text "Tarifs"
-                , choices model
-                , fontSelect model.fonts model.font
+                [ title
+                , column [ alignTop, spacing 32 ]
+                    [ formatSelect model
+                    , colorSelect model
+                    , fontSelect model.fonts model.font
+                    ]
                 , preview 8 (screenWidth - 32) model.selected model.font
                 , quantityAndPrices model
                 , callUs
                 ]
 
-        _ ->
+        ( Tablet, _ ) ->
             column [ padding 32, spacing 32, width fill ]
-                [ el [ Font.size 32 ] <| text "Tarifs"
+                [ title
+                , column [ centerX, spacing 64 ]
+                    [ row [ spacing 32 ]
+                        [ column [ alignTop, spacing 32 ]
+                            [ formatSelect model
+                            , colorSelect model
+                            , fontSelect model.fonts model.font
+                            ]
+                        , preview 12 400 model.selected model.font
+                        ]
+                    , quantityAndPrices model
+                    , callUs
+                    ]
+                ]
+
+        ( Desktop, _ ) ->
+            column [ padding 32, spacing 32, width fill ]
+                [ title
+                , column [ centerX, spacing 64 ]
+                    [ row [ spacing 32 ]
+                        [ column [ alignTop, spacing 32 ]
+                            [ formatSelect model
+                            , colorSelect model
+                            ]
+                        , preview 12 500 model.selected model.font
+                        , fontSelect model.fonts model.font
+                        ]
+                    , quantityAndPrices model
+                    , callUs
+                    ]
+                ]
+
+        ( BigDesktop, _ ) ->
+            column [ padding 32, spacing 32, width fill ]
+                [ title
                 , column [ centerX, spacing 64 ]
                     [ row [ spacing 64 ]
-                        [ choices model
+                        [ column [ alignTop, spacing 32 ]
+                            [ formatSelect model
+                            , colorSelect model
+                            ]
                         , preview 12 500 model.selected model.font
                         , fontSelect model.fonts model.font
                         ]
@@ -181,29 +226,31 @@ view device screenWidth model =
                 ]
 
 
-choices : Model -> Element Msg
-choices model =
-    column [ spacing 32, width fill, alignTop ]
-        [ Input.radio [ spacing 8 ]
-            { onChange = DidSelectFormat
-            , options =
-                model.envelopes
-                    |> List.map .format
-                    |> List.uniqueBy Envelope.Format.toString
-                    |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
-            , selected = Just model.format
-            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
-            }
-        , Input.radio [ spacing 8 ]
-            { onChange = DidSelectEnvelope
-            , options =
-                model.envelopes
-                    |> List.filter (\e -> Envelope.Format.equals e.format model.format)
-                    |> List.map colorOption
-            , selected = Just model.selected
-            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Couleur"
-            }
-        ]
+colorSelect : Model -> Element Msg
+colorSelect model =
+    Input.radio [ spacing 8 ]
+        { onChange = DidSelectEnvelope
+        , options =
+            model.envelopes
+                |> List.filter (\e -> Envelope.Format.equals e.format model.format)
+                |> List.map colorOption
+        , selected = Just model.selected
+        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Couleur"
+        }
+
+
+formatSelect : Model -> Element Msg
+formatSelect model =
+    Input.radio [ spacing 8 ]
+        { onChange = DidSelectFormat
+        , options =
+            model.envelopes
+                |> List.map .format
+                |> List.uniqueBy Envelope.Format.toString
+                |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
+        , selected = Just model.format
+        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
+        }
 
 
 fontSelect : List Font -> Font -> Element Msg

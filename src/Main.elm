@@ -132,7 +132,12 @@ update msg model =
             ( { model | showMenu = False }, Cmd.none )
 
         GotNewWindow width height ->
-            ( { model | device = Element.classifyDevice { width = width, height = height } }, Cmd.none )
+            ( { model
+                | device = Element.classifyDevice { width = width, height = height }
+                , screenWidth = width
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Document Msg
