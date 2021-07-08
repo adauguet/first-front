@@ -1,4 +1,4 @@
-module Envelope.Pricing exposing (Pricing, Step, total)
+module Envelope.Pricing exposing (Pricing, Step, total, unitPrice)
 
 
 type alias Step =
@@ -12,12 +12,12 @@ type alias Pricing =
 
 
 total : Pricing -> Int -> Float
-total ( base, steps ) quantity =
-    toFloat quantity * rate quantity base steps
+total pricing quantity =
+    toFloat quantity * unitPrice pricing quantity
 
 
-rate : Int -> Float -> List Step -> Float
-rate quantity current steps =
+unitPrice : Pricing -> Int -> Float
+unitPrice ( current, steps ) quantity =
     case steps of
         [] ->
             current
@@ -27,4 +27,4 @@ rate quantity current steps =
                 current
 
             else
-                rate quantity price xs
+                unitPrice ( price, xs ) quantity

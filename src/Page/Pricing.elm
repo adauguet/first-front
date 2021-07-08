@@ -1,7 +1,6 @@
 module Page.Pricing exposing (Model, Msg, init, update, view)
 
 import Address exposing (Address)
-import Char exposing (isDigit)
 import Csv.Parser as Csv
 import Element
     exposing
@@ -67,7 +66,6 @@ type alias Model =
     { envelopes : List Envelope
     , format : Format
     , selectedEnvelope : Envelope
-    , quantity : String
     , fonts : List Font
     , selectedFont : Font
     , addresses : Maybe (List Address)
@@ -88,8 +86,7 @@ init =
     { envelopes = x :: xs
     , selectedEnvelope = x
     , format = x.format
-    , quantity = "1"
-    , fonts = f :: fs
+    , fonts = List.sortBy .name (f :: fs)
     , selectedFont = f
     , addresses = Nothing
     , selectedAddressIndex = 0
@@ -100,7 +97,6 @@ init =
 type Msg
     = DidSelectFormat Format
     | DidSelectEnvelope Envelope
-    | DidInputQuantity String
     | DidSelectFont Font
     | ClickedImport
     | GotCsv File
@@ -108,6 +104,7 @@ type Msg
     | ClickedPrevious
     | ClickedNext
     | DidSelectFontColor Element.Color
+    | ClickedResetAddresses
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -129,13 +126,6 @@ update msg model =
 
         DidSelectEnvelope envelope ->
             ( { model | selectedEnvelope = envelope }, Cmd.none )
-
-        DidInputQuantity quantity ->
-            if String.all isDigit quantity then
-                ( { model | quantity = quantity }, Cmd.none )
-
-            else
-                ( model, Cmd.none )
 
         DidSelectFont font ->
             ( { model | selectedFont = font }, Cmd.none )
@@ -162,6 +152,9 @@ update msg model =
 
         DidSelectFontColor color ->
             ( { model | selectedFontColor = color }, Cmd.none )
+
+        ClickedResetAddresses ->
+            ( { model | addresses = Nothing }, Cmd.none )
 
 
 updateIndex : Model -> (Int -> Int) -> Model
@@ -205,9 +198,11 @@ view device screenWidth model =
 
                 _ ->
                     column [ spacing 16 ]
-                        [ wording
-                        , link (paddingXY 32 16 :: linkAttributes) linkConfiguration
-                        , UI.callLink (paddingXY 32 16 :: linkAttributes)
+                        [ el [ centerX ] <| wording
+                        , row [ spacing 16 ]
+                            [ link (paddingXY 32 16 :: linkAttributes) linkConfiguration
+                            , UI.callLink (paddingXY 32 16 :: linkAttributes)
+                            ]
                         ]
 
         title =
@@ -216,8 +211,8 @@ view device screenWidth model =
         addressesView =
             column []
                 [ el [ Font.bold, paddingBottom 12 ] <| text "Adresses"
-                , case model.addresses of
-                    Nothing ->
+                , let
+                    loadAddressButton =
                         Input.button
                             [ Background.color Color.primary500
                             , Border.rounded 4
@@ -228,14 +223,33 @@ view device screenWidth model =
                             , label = text "Charger mes adresses"
                             }
 
+                    resetAddressesButton =
+                        Input.button [ Font.color Color.primary500 ]
+                            { onPress = Just ClickedResetAddresses
+                            , label = text "Supprimer"
+                            }
+                  in
+                  case model.addresses of
+                    Nothing ->
+                        loadAddressButton
+
                     Just [] ->
-                        text "Aucune adresse chargée"
+                        column [ width fill, spacing 8 ]
+                            [ text "Aucune adresse chargée"
+                            , loadAddressButton
+                            ]
 
                     Just [ _ ] ->
-                        text "1 adresse chargée"
+                        column [ width fill, spacing 8 ]
+                            [ text "1 adresse chargée"
+                            , resetAddressesButton
+                            ]
 
                     Just list ->
-                        text <| String.fromInt (List.length list) ++ " adresses chargées"
+                        column [ width fill, spacing 8 ]
+                            [ text <| String.fromInt (List.length list) ++ " adresses chargées"
+                            , resetAddressesButton
+                            ]
                 ]
     in
     case ( device.class, device.orientation ) of
@@ -268,7 +282,7 @@ view device screenWidth model =
                             , fontSelect model.fonts model.selectedFont
                             , fontColorSelect model
                             ]
-                        , el [ alignTop ] <| preview model 12 400
+                        , el [ alignTop ] <| preview model 10 400
                         ]
                     , column [ centerX, spacing 32 ]
                         [ quantityAndPrices model
@@ -281,21 +295,37 @@ view device screenWidth model =
             column [ width fill, paddingXY 64 32, spacing 32 ]
                 [ title
                 , column [ width fill, spacing 64 ]
-                    [ row [ width fill, spacing 32 ]
-                        [ column [ alignTop, alignLeft, spacing 32 ]
+                    [ row [ centerX, spacing 32 ]
+                        [ column
+                            [ alignTop
+                            , alignLeft
+                            , spacing 32
+                            , height fill
+                            , width (px 250)
+                            ]
                             [ addressesView
                             , formatSelect model
                             , dimensionsSelect model
                             , envelopeColorSelect model
                             ]
-                        , el [ centerX, alignTop ] <| preview model 12 500
-                        , column [ alignTop, alignRight, spacing 32 ]
+                        , el
+                            [ centerX
+                            , alignTop
+                            , height fill
+                            ]
+                            (preview model 10 500)
+                        , column
+                            [ alignTop
+                            , height fill
+                            , alignRight
+                            , spacing 32
+                            ]
                             [ fontSelect model.fonts model.selectedFont
                             , fontColorSelect model
                             ]
                         ]
-                    , row [ centerX, spacing 32 ]
-                        [ quantityAndPrices model
+                    , column [ centerX, spacing 32 ]
+                        [ el [ centerX ] <| quantityAndPrices model
                         , callUs
                         ]
                     ]
@@ -605,48 +635,58 @@ paragraphIfNotEmpty string =
 
 quantityAndPrices : Model -> Element Msg
 quantityAndPrices model =
-    column [ width fill, spacing 8 ]
-        [ row [ width fill, spacing 16 ]
-            [ el [ Font.bold, width fill ] <| text "Quantité"
-            , Input.text [ alignRight, width fill, Font.alignRight ]
-                { onChange = DidInputQuantity
-                , text = model.quantity
-                , placeholder = Nothing
-                , label = Input.labelHidden "Quantité"
-                }
+    let
+        format : (Int -> Float) -> String
+        format compute =
+            case quantity of
+                0 ->
+                    "- €"
+
+                amount ->
+                    formatAmount <| compute amount
+
+        formatAmount amount =
+            FormatNumber.format { frenchLocale | decimals = Exact 2, positiveSuffix = " €" } amount
+
+        shipping : Float
+        shipping =
+            4.99
+
+        computeSubTotal =
+            Envelope.Pricing.total model.selectedEnvelope.pricing
+
+        quantity : Int
+        quantity =
+            case model.addresses of
+                Just addresses ->
+                    List.length addresses
+
+                Nothing ->
+                    0
+
+        rowSpacing : Int
+        rowSpacing =
+            32
+    in
+    column [ spacing 16 ]
+        [ row [ width fill, spacing rowSpacing ]
+            [ text "Quantité"
+            , el [ alignRight, width <| px 100, Font.alignRight ] <| text <| String.fromInt quantity
             ]
-        , let
-            format : (Int -> Float) -> String
-            format compute =
-                case String.toInt model.quantity of
-                    Nothing ->
-                        "- €"
-
-                    Just 0 ->
-                        "- €"
-
-                    Just quantity ->
-                        FormatNumber.format { frenchLocale | decimals = Exact 2, positiveSuffix = " €" } <| compute quantity
-
-            shipping : Float
-            shipping =
-                4.99
-
-            computeSubTotal =
-                Envelope.Pricing.total model.selectedEnvelope.pricing
-          in
-          column [ width fill, spacing 16 ]
-            [ row [ width fill, spacing 8 ]
-                [ text "Sous-total"
-                , el [ alignRight ] <| text <| format computeSubTotal
-                ]
-            , row [ width fill, spacing 8 ]
-                [ text "Frais de port"
-                , el [ alignRight ] <| text <| format (\_ -> shipping)
-                ]
-            , row [ width fill, spacing 8, Font.bold ]
-                [ text "Total"
-                , el [ alignRight ] <| text <| format (\q -> computeSubTotal q + shipping)
-                ]
+        , row [ width fill, spacing rowSpacing ]
+            [ text "Prix unitaire"
+            , el [ alignRight, width <| px 100, Font.alignRight ] <| text <| formatAmount <| Envelope.Pricing.unitPrice model.selectedEnvelope.pricing 1
+            ]
+        , row [ width fill, spacing rowSpacing ]
+            [ text "Sous-total"
+            , el [ alignRight, width <| px 100, Font.alignRight ] <| text <| format computeSubTotal
+            ]
+        , row [ width fill, spacing rowSpacing ]
+            [ text "Frais de port"
+            , el [ alignRight, width <| px 100, Font.alignRight ] <| text <| format (\_ -> shipping)
+            ]
+        , row [ width fill, spacing rowSpacing, Font.bold ]
+            [ text "Total"
+            , el [ alignRight, width <| px 100, Font.alignRight ] <| text <| format (\q -> computeSubTotal q + shipping)
             ]
         ]
