@@ -1,6 +1,8 @@
 module Page.Pricing exposing (Model, Msg, init, update, view)
 
+import Address exposing (Address)
 import Char exposing (isDigit)
+import Csv.Parser as Csv
 import Element
     exposing
         ( Attribute
@@ -9,15 +11,18 @@ import Element
         , Element
         , Orientation(..)
         , alignBottom
+        , alignLeft
         , alignRight
         , alignTop
         , centerX
+        , centerY
         , column
         , el
         , fill
         , height
         , inFront
         , link
+        , minimum
         , moveLeft
         , moveUp
         , none
@@ -26,13 +31,16 @@ import Element
         , paddingXY
         , paragraph
         , px
+        , rgb255
         , row
         , shrink
         , spacing
+        , spacingXY
         , text
         , textColumn
         , transparent
         , width
+        , wrappedRow
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -42,10 +50,14 @@ import Envelope exposing (Envelope)
 import Envelope.Color exposing (Color(..))
 import Envelope.Format exposing (Format(..))
 import Envelope.Pricing
+import File exposing (File)
+import File.Select
 import Font as Font_ exposing (Font)
 import FormatNumber
 import FormatNumber.Locales exposing (Decimals(..), frenchLocale)
 import List.Extra as List
+import Millimeter exposing (Millimeter, cm, mm)
+import Task
 import UI
 import UI.Color as Color
 import UI.Color.Tailwind as Color
@@ -54,10 +66,13 @@ import UI.Color.Tailwind as Color
 type alias Model =
     { envelopes : List Envelope
     , format : Format
-    , selected : Envelope
+    , selectedEnvelope : Envelope
     , quantity : String
     , fonts : List Font
-    , font : Font
+    , selectedFont : Font
+    , addresses : Maybe (List Address)
+    , selectedAddressIndex : Int
+    , selectedFontColor : Element.Color
     }
 
 
@@ -71,11 +86,14 @@ init =
             Font_.all
     in
     { envelopes = x :: xs
-    , selected = x
+    , selectedEnvelope = x
     , format = x.format
     , quantity = "1"
     , fonts = f :: fs
-    , font = f
+    , selectedFont = f
+    , addresses = Nothing
+    , selectedAddressIndex = 0
+    , selectedFontColor = rgb255 1 63 116
     }
 
 
@@ -84,37 +102,76 @@ type Msg
     | DidSelectEnvelope Envelope
     | DidInputQuantity String
     | DidSelectFont Font
+    | ClickedImport
+    | GotCsv File
+    | GotString String
+    | ClickedPrevious
+    | ClickedNext
+    | DidSelectFontColor Element.Color
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         DidSelectFormat format ->
             let
                 mEnvelope =
                     model.envelopes
-                        |> List.filter (\envelope -> Envelope.Format.equals format envelope.format)
+                        |> List.filter (\envelope -> Envelope.Format.equalsDimensions format envelope.format)
                         |> List.head
             in
             case mEnvelope of
                 Just envelope ->
-                    { model | format = format, selected = envelope }
+                    ( { model | format = format, selectedEnvelope = envelope }, Cmd.none )
 
                 Nothing ->
-                    { model | format = format }
+                    ( { model | format = format }, Cmd.none )
 
         DidSelectEnvelope envelope ->
-            { model | selected = envelope }
+            ( { model | selectedEnvelope = envelope }, Cmd.none )
 
         DidInputQuantity quantity ->
             if String.all isDigit quantity then
-                { model | quantity = quantity }
+                ( { model | quantity = quantity }, Cmd.none )
 
             else
-                model
+                ( model, Cmd.none )
 
         DidSelectFont font ->
-            { model | font = font }
+            ( { model | selectedFont = font }, Cmd.none )
+
+        ClickedImport ->
+            ( model, File.Select.file [ "text/csv" ] GotCsv )
+
+        GotCsv file ->
+            ( model, Task.perform GotString <| File.toString file )
+
+        GotString string ->
+            case Csv.parse { fieldSeparator = ',' } string of
+                Ok rows ->
+                    ( { model | addresses = Just <| List.filterMap Address.make rows }, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
+        ClickedPrevious ->
+            ( updateIndex model (\index -> index - 1), Cmd.none )
+
+        ClickedNext ->
+            ( updateIndex model ((+) 1), Cmd.none )
+
+        DidSelectFontColor color ->
+            ( { model | selectedFontColor = color }, Cmd.none )
+
+
+updateIndex : Model -> (Int -> Int) -> Model
+updateIndex model increment =
+    case model.addresses of
+        Just addresses ->
+            { model | selectedAddressIndex = modBy (List.length addresses) (increment model.selectedAddressIndex) }
+
+        Nothing ->
+            model
 
 
 view : Device -> Int -> Model -> Element Msg
@@ -131,7 +188,7 @@ view device screenWidth model =
                     ]
 
                 wording =
-                    textColumn [ width fill ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
+                    textColumn [ width shrink ] [ paragraph [] [ text "Pour passer commande, contactez-nous\u{00A0}! 😉" ] ]
 
                 linkConfiguration =
                     { url = "mailto:contact@mespetitesenveloppes.com"
@@ -147,7 +204,7 @@ view device screenWidth model =
                         ]
 
                 _ ->
-                    column [ centerX, spacing 16 ]
+                    column [ spacing 16 ]
                         [ wording
                         , link (paddingXY 32 16 :: linkAttributes) linkConfiguration
                         , UI.callLink (paddingXY 32 16 :: linkAttributes)
@@ -155,21 +212,45 @@ view device screenWidth model =
 
         title =
             el [ Font.size 32 ] <| text "Tarifs"
+
+        addressesView =
+            column []
+                [ el [ Font.bold, paddingBottom 12 ] <| text "Adresses"
+                , case model.addresses of
+                    Nothing ->
+                        Input.button
+                            [ Background.color Color.primary500
+                            , Border.rounded 4
+                            , Font.color Color.white
+                            , paddingXY 16 8
+                            ]
+                            { onPress = Just ClickedImport
+                            , label = text "Charger mes adresses"
+                            }
+
+                    Just [] ->
+                        text "Aucune adresse chargée"
+
+                    Just [ _ ] ->
+                        text "1 adresse chargée"
+
+                    Just list ->
+                        text <| String.fromInt (List.length list) ++ " adresses chargées"
+                ]
     in
     case ( device.class, device.orientation ) of
         ( Phone, _ ) ->
-            column
-                [ padding 16
-                , spacing 32
-                , width fill
-                ]
+            column [ padding 16, spacing 32, width fill ]
                 [ title
+                , addressesView
                 , column [ alignTop, spacing 32 ]
                     [ formatSelect model
-                    , colorSelect model
-                    , fontSelect model.fonts model.font
+                    , dimensionsSelect model
+                    , envelopeColorSelect model
+                    , fontSelect model.fonts model.selectedFont
+                    , fontColorSelect model
                     ]
-                , preview 8 (screenWidth - 32) model.selected model.font
+                , preview model 8 (screenWidth - 32)
                 , quantityAndPrices model
                 , callUs
                 ]
@@ -177,76 +258,141 @@ view device screenWidth model =
         ( Tablet, _ ) ->
             column [ padding 32, spacing 32, width fill ]
                 [ title
-                , column [ centerX, spacing 64 ]
-                    [ row [ spacing 32 ]
-                        [ column [ alignTop, spacing 32 ]
-                            [ formatSelect model
-                            , colorSelect model
-                            , fontSelect model.fonts model.font
+                , column [ width fill, spacing 64 ]
+                    [ row [ width fill, spacing 32 ]
+                        [ column [ alignTop, width (px 250), spacing 32 ]
+                            [ addressesView
+                            , formatSelect model
+                            , dimensionsSelect model
+                            , envelopeColorSelect model
+                            , fontSelect model.fonts model.selectedFont
+                            , fontColorSelect model
                             ]
-                        , preview 12 400 model.selected model.font
+                        , el [ alignTop ] <| preview model 12 400
                         ]
-                    , quantityAndPrices model
-                    , callUs
+                    , column [ centerX, spacing 32 ]
+                        [ quantityAndPrices model
+                        , callUs
+                        ]
                     ]
                 ]
 
-        ( Desktop, _ ) ->
-            column [ padding 32, spacing 32, width fill ]
+        _ ->
+            column [ width fill, paddingXY 64 32, spacing 32 ]
                 [ title
-                , column [ centerX, spacing 64 ]
-                    [ row [ spacing 32 ]
-                        [ column [ alignTop, spacing 32 ]
-                            [ formatSelect model
-                            , colorSelect model
+                , column [ width fill, spacing 64 ]
+                    [ row [ width fill, spacing 32 ]
+                        [ column [ alignTop, alignLeft, spacing 32 ]
+                            [ addressesView
+                            , formatSelect model
+                            , dimensionsSelect model
+                            , envelopeColorSelect model
                             ]
-                        , preview 12 500 model.selected model.font
-                        , fontSelect model.fonts model.font
-                        ]
-                    , quantityAndPrices model
-                    , callUs
-                    ]
-                ]
-
-        ( BigDesktop, _ ) ->
-            column [ padding 32, spacing 32, width fill ]
-                [ title
-                , column [ centerX, spacing 64 ]
-                    [ row [ spacing 64 ]
-                        [ column [ alignTop, spacing 32 ]
-                            [ formatSelect model
-                            , colorSelect model
+                        , el [ centerX, alignTop ] <| preview model 12 500
+                        , column [ alignTop, alignRight, spacing 32 ]
+                            [ fontSelect model.fonts model.selectedFont
+                            , fontColorSelect model
                             ]
-                        , preview 12 500 model.selected model.font
-                        , fontSelect model.fonts model.font
                         ]
-                    , quantityAndPrices model
-                    , callUs
+                    , row [ centerX, spacing 32 ]
+                        [ quantityAndPrices model
+                        , callUs
+                        ]
                     ]
                 ]
 
 
-colorSelect : Model -> Element Msg
-colorSelect model =
+envelopeColorSelect : Model -> Element Msg
+envelopeColorSelect model =
     Input.radio [ spacing 8 ]
         { onChange = DidSelectEnvelope
         , options =
             model.envelopes
-                |> List.filter (\e -> Envelope.Format.equals e.format model.format)
-                |> List.map colorOption
-        , selected = Just model.selected
+                |> List.filter (\e -> Envelope.Format.equalsDimensions e.format model.format)
+                |> List.map envelopeColorOption
+        , selected = Just model.selectedEnvelope
         , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Couleur"
         }
 
 
+fontColorSelect : Model -> Element Msg
+fontColorSelect model =
+    let
+        colorButton color =
+            Input.button []
+                { onPress = Just <| DidSelectFontColor color
+                , label =
+                    if Color.equals model.selectedFontColor color then
+                        el
+                            [ width <| px 24
+                            , height <| px 24
+                            , Background.color Color.white
+                            , Border.rounded 4
+                            , Border.width 1
+                            , Border.color Color.warmGray300
+                            ]
+                        <|
+                            el
+                                [ width <| px 18
+                                , height <| px 18
+                                , Background.color color
+                                , Border.rounded 3
+                                , centerX
+                                , centerY
+                                ]
+                                none
+
+                    else
+                        el
+                            [ width <| px 24
+                            , height <| px 24
+                            , Background.color color
+                            , Border.rounded 4
+                            , Border.width 1
+                            , Border.color Color.warmGray300
+                            ]
+                            none
+                }
+    in
+    Color.rosemood
+        |> List.map colorButton
+        |> wrappedRow [ spacingXY 5 5, width <| px 200 ]
+
+
 formatSelect : Model -> Element Msg
 formatSelect model =
+    let
+        formatView format =
+            Input.option format
+                (el
+                    [ Background.image <| Envelope.Format.formatImage format
+                    , width <| px 48
+                    , height <| px 48
+                    ]
+                    none
+                )
+    in
+    Input.radioRow [ spacing 8 ]
+        { onChange = DidSelectFormat
+        , options =
+            model.envelopes
+                |> List.map .format
+                |> List.uniqueBy Envelope.Format.formatDescription
+                |> List.map formatView
+        , selected = Just model.format
+        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
+        }
+
+
+dimensionsSelect : Model -> Element Msg
+dimensionsSelect model =
     Input.radio [ spacing 8 ]
         { onChange = DidSelectFormat
         , options =
             model.envelopes
                 |> List.map .format
                 |> List.uniqueBy Envelope.Format.toString
+                |> List.filter (Envelope.Format.equalsFormat model.format)
                 |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
         , selected = Just model.format
         , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
@@ -279,13 +425,17 @@ paddingBottom int =
     paddingEach { top = 0, left = 0, right = 0, bottom = int }
 
 
-colorOption : Envelope -> Option Envelope Msg
-colorOption envelope =
+envelopeColorOption : Envelope -> Option Envelope Msg
+envelopeColorOption envelope =
+    let
+        size =
+            24
+    in
     Input.option envelope <|
         row [ spacing 12 ]
             [ el
-                [ width <| px 44
-                , height <| px 44
+                [ width <| px size
+                , height <| px size
                 , Background.color <| Envelope.Color.toColor envelope.color
                 , Border.rounded 4
                 , Border.width 1
@@ -296,52 +446,52 @@ colorOption envelope =
             ]
 
 
-preview : Int -> Int -> Envelope -> Font -> Element msg
-preview scaleFontSize size envelope font =
+pxPerMm : Format -> Int -> Float
+pxPerMm format widthPx =
+    toFloat widthPx
+        / (case format of
+            Square sizeMM ->
+                Millimeter.toFloat sizeMM
+
+            Rectangle _ widthMM ->
+                Millimeter.toFloat widthMM
+          )
+
+
+preview : Model -> Int -> Int -> Element Msg
+preview model scaleFontSize envelopeWidth =
     let
-        oneCmToPx =
-            case envelope.format of
-                Square s ->
-                    size * 10 // s
+        selectedAddress =
+            case model.addresses of
+                Nothing ->
+                    Address.placeholder
 
-                Rectangle w _ ->
-                    size * 10 // w
+                Just [] ->
+                    Address.placeholder
 
-        fontSize =
-            size * font.previewSize // 500
+                Just [ address ] ->
+                    address
+
+                Just addresses ->
+                    List.getAt model.selectedAddressIndex addresses
+                        |> Maybe.withDefault Address.placeholder
+
+        pxToMm px =
+            0.26458333333719 * toFloat px
+
+        mmToPx : Millimeter -> Int
+        mmToPx millimeter =
+            round <| Millimeter.toFloat millimeter * pxPerMm model.selectedEnvelope.format envelopeWidth
     in
     column
         [ width fill
         , spacing 16
         ]
-        [ column [ spacing 16 ]
-            [ el
-                [ alignTop
-                , width <| px size
-                , height <| px size
-                , Background.color <| Envelope.Color.toColor envelope.color
-                , Border.rounded 4
-                , Border.width 1
-                , Border.color Color.warmGray300
-                ]
-              <|
-                textColumn
-                    [ alignRight
-                    , alignBottom
-                    , moveUp (toFloat size / 3.5)
-                    , moveLeft (toFloat size / 6.5)
-                    , spacing 4
-                    , Font.family [ Font_.typeface font ]
-                    , width shrink
-                    , Font.color Color.blue800
-                    , Font.size fontSize
-                    , padding 8
-                    ]
-                    [ paragraph [] [ text "Monsieur et Madame MACRON" ]
-                    , paragraph [] [ text "55 Rue du Faubourg Saint-Honoré" ]
-                    , paragraph [] [ text "75008 PARIS" ]
-                    ]
-            , column [ alignRight, width <| px oneCmToPx ]
+        [ column
+            [ width fill
+            , spacing 4
+            ]
+            [ column [ alignRight, width <| px <| mmToPx (mm 10) ]
                 [ el
                     [ width fill
                     , height <| px 4
@@ -358,13 +508,99 @@ preview scaleFontSize size envelope font =
                     ]
                     none
                 ]
+            , let
+                envelopeHeight =
+                    case model.selectedEnvelope.format of
+                        Square _ ->
+                            envelopeWidth
+
+                        Rectangle h w ->
+                            round <| toFloat envelopeWidth * Millimeter.toFloat h / Millimeter.toFloat w
+
+                fontSize =
+                    round <| pxToMm model.selectedFont.previewSize * pxPerMm model.selectedEnvelope.format envelopeWidth
+              in
+              el
+                [ alignTop
+                , width <| px envelopeWidth
+                , height <| px <| envelopeHeight
+                , Background.color <| Envelope.Color.toColor model.selectedEnvelope.color
+                , Border.rounded 4
+                , Border.width 1
+                , Border.color Color.warmGray300
+                ]
+              <|
+                textColumn
+                    [ alignRight
+                    , alignBottom
+                    , moveUp <| toFloat <| mmToPx <| cm 3
+                    , moveLeft <| toFloat <| mmToPx <| cm 2
+                    , spacing 0
+                    , Font.family [ Font_.typeface model.selectedFont ]
+                    , width <| minimum (round <| toFloat envelopeWidth / 2.5) <| shrink
+                    , Font.color model.selectedFontColor
+                    , Font.size fontSize
+                    , padding 8
+                    ]
+                    [ paragraph [] [ text selectedAddress.name ]
+                    , paragraph [] [ text selectedAddress.street ]
+                    , paragraphIfNotEmpty selectedAddress.streetLine2
+                    , paragraph []
+                        [ row [ spacing 8 ]
+                            [ textIfNotEmpty selectedAddress.postalCode
+                            , textIfNotEmpty selectedAddress.city
+                            ]
+                        ]
+                    , paragraphIfNotEmpty selectedAddress.country
+                    ]
             ]
+        , case model.addresses of
+            Nothing ->
+                none
+
+            Just [] ->
+                none
+
+            Just [ _ ] ->
+                el [ centerX, Font.color Color.warmGray400 ] <| text "1 / 1"
+
+            Just addresses ->
+                let
+                    index =
+                        model.selectedAddressIndex + 1
+
+                    total =
+                        List.length addresses
+                in
+                row [ width fill, spacing 8, Font.size 12 ]
+                    [ Input.button [ Font.color Color.primary500 ] { onPress = Just ClickedPrevious, label = text "précédent" }
+                    , el [ centerX, Font.color Color.warmGray400 ] <| text <| String.fromInt index ++ " / " ++ String.fromInt total
+                    , Input.button [ Font.color Color.primary500, alignRight ] { onPress = Just ClickedNext, label = text "suivant" }
+                    ]
         , textColumn [ width fill ]
-            [ paragraph [ Font.color Color.warmGray400, Font.size 12, transparent font.isAllCapsCompatible ]
+            [ paragraph [ Font.color Color.warmGray400, Font.size 12, transparent model.selectedFont.isAllCapsCompatible ]
                 [ text "⚠️ Les mots en lettres majuscules sont peu lisibles avec cette police."
                 ]
             ]
         ]
+
+
+textIfNotEmpty : String -> Element msg
+textIfNotEmpty string =
+    if String.isEmpty string then
+        none
+
+    else
+        text string
+
+
+paragraphIfNotEmpty : String -> Element msg
+paragraphIfNotEmpty string =
+    if String.isEmpty string then
+        none
+
+    else
+        paragraph [] [ text string ]
 
 
 quantityAndPrices : Model -> Element Msg
@@ -397,7 +633,7 @@ quantityAndPrices model =
                 4.99
 
             computeSubTotal =
-                Envelope.Pricing.total model.selected.pricing
+                Envelope.Pricing.total model.selectedEnvelope.pricing
           in
           column [ width fill, spacing 16 ]
             [ row [ width fill, spacing 8 ]

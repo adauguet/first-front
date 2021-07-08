@@ -38,7 +38,6 @@ import Element.Input as Input
 import Element.Region as Region
 import Page.Home as Home
 import Page.Pricing as Pricing
-import Page.Upload as Upload
 import Route exposing (Route)
 import UI
 import UI.Color as Color
@@ -58,7 +57,6 @@ type alias Model =
 type Page
     = Home
     | Pricing Pricing.Model
-    | Upload Upload.Model
     | NotFound
 
 
@@ -70,9 +68,6 @@ fromRoute mRoute =
 
         Just Route.Pricing ->
             Pricing Pricing.init
-
-        Just Route.Upload ->
-            Upload Upload.init
 
         Nothing ->
             NotFound
@@ -94,7 +89,6 @@ type Msg
     = UrlChanged Url
     | ClickedLink UrlRequest
     | GotPricingMsg Pricing.Msg
-    | GotUploadMsg Upload.Msg
     | ClickedOpenMenu
     | ClickedCloseMenu
     | GotNewWindow Int Int
@@ -102,10 +96,6 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        _ =
-            Debug.log "msg" msg
-    in
     case msg of
         UrlChanged url ->
             ( { model | page = fromRoute <| Route.parse url }, Cmd.none )
@@ -126,11 +116,8 @@ update msg model =
         GotPricingMsg subMsg ->
             case model.page of
                 Pricing subModel ->
-                    let
-                        m =
-                            Pricing.update subMsg subModel
-                    in
-                    ( { model | page = Pricing m }, Cmd.none )
+                    Pricing.update subMsg subModel
+                        |> lift model Pricing GotPricingMsg
 
                 _ ->
                     ( model, Cmd.none )
@@ -149,17 +136,10 @@ update msg model =
             , Cmd.none
             )
 
-        GotUploadMsg subMsg ->
-            case model.page of
-                Upload subModel ->
-                    let
-                        ( m, cmd ) =
-                            Upload.update subMsg subModel
-                    in
-                    ( { model | page = Upload m }, Cmd.map GotUploadMsg cmd )
 
-                _ ->
-                    ( model, Cmd.none )
+lift : Model -> (m -> Page) -> (msg -> Msg) -> ( m, Cmd msg ) -> ( Model, Cmd Msg )
+lift model toPage toMsg ( m, cmd ) =
+    ( { model | page = toPage m }, Cmd.map toMsg cmd )
 
 
 view : Model -> Document Msg
@@ -171,7 +151,7 @@ view model =
                     14
 
                 _ ->
-                    20
+                    16
     in
     { title = "Mes Petites Enveloppes"
     , body =
@@ -204,9 +184,6 @@ content { device, screenWidth, page } =
 
         Pricing model ->
             Pricing.view device screenWidth model |> Element.map GotPricingMsg
-
-        Upload model ->
-            Upload.view model |> Element.map GotUploadMsg
 
         NotFound ->
             textColumn
@@ -272,7 +249,7 @@ header { class, orientation } =
         _ ->
             row
                 [ width fill
-                , padding 32
+                , padding 16
                 , Background.color Color.primary500
                 , Region.navigation
                 , spacing 64

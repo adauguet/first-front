@@ -1,5 +1,6 @@
 module UI.Color exposing
     ( black
+    , equals
     , hexToColor
     , primary100
     , primary150
@@ -20,6 +21,7 @@ module UI.Color exposing
     , primary850
     , primary900
     , primary950
+    , rosemood
     , white
     )
 
@@ -132,6 +134,43 @@ black =
 
 
 
+-- rosemood
+
+
+rosemood : List Color
+rosemood =
+    [ rgb255 2 1 0
+    , rgb255 107 100 93
+    , rgb255 1 63 116
+    , rgb255 174 9 55
+    , rgb255 0 151 140
+    , rgb255 111 20 24
+    , rgb255 81 48 135
+    , rgb255 118 122 127
+    , rgb255 104 68 41
+    , rgb255 87 142 198
+    , rgb255 226 37 31
+    , rgb255 88 174 77
+    , rgb255 228 106 40
+    , rgb255 214 2 113
+    , rgb255 193 197 203
+    , rgb255 170 135 36
+    , rgb255 8 171 183
+    , rgb255 255 117 110
+    , rgb255 180 201 0
+    , rgb255 246 169 0
+    , rgb255 182 169 207
+    , rgb255 255 255 255
+    , rgb255 218 201 160
+    , rgb255 159 213 240
+    , rgb255 220 163 169
+    , rgb255 192 220 177
+    , rgb255 255 211 0
+    , rgb255 240 153 185
+    ]
+
+
+
 -- helpers
 
 
@@ -155,3 +194,8 @@ hexToRgb hex =
 divModBy : Int -> Int -> ( Int, Int )
 divModBy by n =
     ( n // by, modBy by n )
+
+
+equals : Color -> Color -> Bool
+equals color1 color2 =
+    Element.toRgb color1 == Element.toRgb color2

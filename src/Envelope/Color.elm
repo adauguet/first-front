@@ -7,6 +7,9 @@ type Color
     = Ivory
     | White
     | Cream
+    | Flecked
+    | BlueKingFisher
+    | Fuchsia
 
 
 toString : Color -> String
@@ -21,6 +24,15 @@ toString color =
         Cream ->
             "Crème"
 
+        Flecked ->
+            "Mouchetée"
+
+        BlueKingFisher ->
+            "Bleue Martin-pêcheur"
+
+        Fuchsia ->
+            "Fuschia"
+
 
 equals : Color -> Color -> Bool
 equals color1 color2 =
@@ -32,6 +44,15 @@ equals color1 color2 =
             True
 
         ( Cream, Cream ) ->
+            True
+
+        ( Flecked, Flecked ) ->
+            True
+
+        ( BlueKingFisher, BlueKingFisher ) ->
+            True
+
+        ( Fuchsia, Fuchsia ) ->
             True
 
         _ ->
@@ -49,3 +70,12 @@ toColor color =
 
         Cream ->
             rgb255 255 253 208
+
+        Flecked ->
+            rgb255 199 155 114
+
+        BlueKingFisher ->
+            rgb255 45 113 182
+
+        Fuchsia ->
+            rgb255 212 66 105

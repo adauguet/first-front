@@ -1,4 +1,4 @@
-module Address exposing (Address, make)
+module Address exposing (Address, make, placeholder)
 
 
 type alias Address =
@@ -19,3 +19,8 @@ make list =
 
         _ ->
             Nothing
+
+
+placeholder : Address
+placeholder =
+    Address "Monsieur et Madame MACRON" "55 Rue du Faubourg Saint-Honoré" "" "75008" "PARIS" "FRANCE"

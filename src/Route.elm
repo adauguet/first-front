@@ -9,7 +9,6 @@ import Url.Parser exposing (Parser, map, oneOf, s, top)
 type Route
     = Home
     | Pricing
-    | Upload
 
 
 parser : Parser (Route -> a) a
@@ -17,7 +16,6 @@ parser =
     oneOf
         [ map Home top
         , map Pricing (s "pricing")
-        , map Upload (s "upload")
         ]
 
 
@@ -34,9 +32,6 @@ toPieces route =
 
         Pricing ->
             [ "pricing" ]
-
-        Upload ->
-            [ "upload" ]
 
 
 toString : Route -> String

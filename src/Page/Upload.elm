@@ -8,7 +8,6 @@ import Element
         , centerX
         , centerY
         , column
-        , el
         , mouseOver
         , none
         , padding
@@ -33,7 +32,6 @@ import UI.Color.Tailwind as Color
 
 type Model
     = Idle
-    | Loading
     | Loaded (List Address)
     | Error Csv.Problem
 
@@ -41,10 +39,6 @@ type Model
 init : Model
 init =
     Idle
-
-
-
--- Loaded [ Address "Claire et Antoine DAUGUET" "1 rue de l'Église" "" "83440" "SEILLANS" "" ]
 
 
 type Msg
@@ -88,9 +82,8 @@ view model =
                 , label = text "Charger"
                 }
 
-        Loading ->
-            el [ centerX, centerY ] <| text "Loading"
-
+        -- Loading ->
+        --     el [ centerX, centerY ] <| text "Loading"
         Loaded [] ->
             text "empty"
 
