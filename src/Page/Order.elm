@@ -1,4 +1,4 @@
-module Page.Pricing exposing (Model, Msg, init, update, view)
+module Page.Order exposing (Model, Msg, init, update, view)
 
 import Address exposing (Address)
 import Csv.Parser as Csv
@@ -206,7 +206,7 @@ view device screenWidth model =
                         ]
 
         title =
-            el [ Font.size 32 ] <| text "Tarifs"
+            el [ Font.size 32 ] <| text "Commande"
 
         addressesView =
             column []
@@ -258,8 +258,7 @@ view device screenWidth model =
                 [ title
                 , addressesView
                 , column [ alignTop, spacing 32 ]
-                    [ formatSelect model
-                    , dimensionsSelect model
+                    [ dimensionsSelect model
                     , envelopeColorSelect model
                     , fontSelect model.fonts model.selectedFont
                     , fontColorSelect model
@@ -276,7 +275,6 @@ view device screenWidth model =
                     [ row [ width fill, spacing 32 ]
                         [ column [ alignTop, width (px 250), spacing 32 ]
                             [ addressesView
-                            , formatSelect model
                             , dimensionsSelect model
                             , envelopeColorSelect model
                             , fontSelect model.fonts model.selectedFont
@@ -304,7 +302,6 @@ view device screenWidth model =
                             , width (px 250)
                             ]
                             [ addressesView
-                            , formatSelect model
                             , dimensionsSelect model
                             , envelopeColorSelect model
                             ]
@@ -330,6 +327,20 @@ view device screenWidth model =
                         ]
                     ]
                 ]
+
+
+dimensionsSelect : Model -> Element Msg
+dimensionsSelect model =
+    Input.radio [ spacing 8 ]
+        { onChange = DidSelectFormat
+        , options =
+            model.envelopes
+                |> List.map .format
+                |> List.uniqueBy Envelope.Format.toString
+                |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
+        , selected = Just model.format
+        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
+        }
 
 
 envelopeColorSelect : Model -> Element Msg
@@ -387,46 +398,6 @@ fontColorSelect model =
     Color.rosemood
         |> List.map colorButton
         |> wrappedRow [ spacingXY 5 5, width <| px 200 ]
-
-
-formatSelect : Model -> Element Msg
-formatSelect model =
-    let
-        formatView format =
-            Input.option format
-                (el
-                    [ Background.image <| Envelope.Format.formatImage format
-                    , width <| px 48
-                    , height <| px 48
-                    ]
-                    none
-                )
-    in
-    Input.radioRow [ spacing 8 ]
-        { onChange = DidSelectFormat
-        , options =
-            model.envelopes
-                |> List.map .format
-                |> List.uniqueBy Envelope.Format.formatDescription
-                |> List.map formatView
-        , selected = Just model.format
-        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
-        }
-
-
-dimensionsSelect : Model -> Element Msg
-dimensionsSelect model =
-    Input.radio [ spacing 8 ]
-        { onChange = DidSelectFormat
-        , options =
-            model.envelopes
-                |> List.map .format
-                |> List.uniqueBy Envelope.Format.toString
-                |> List.filter (Envelope.Format.equalsFormat model.format)
-                |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
-        , selected = Just model.format
-        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
-        }
 
 
 fontSelect : List Font -> Font -> Element Msg

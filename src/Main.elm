@@ -37,7 +37,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Page.Home as Home
-import Page.Pricing as Pricing
+import Page.Order as Pricing
 import Route exposing (Route)
 import UI
 import UI.Color as Color
@@ -243,7 +243,7 @@ header { class, orientation } =
                     , paddingXY 16 8
                     , mouseOver [ Font.color Color.warmGray200 ]
                     ]
-                    { route = Route.Pricing, label = text "Tarifs" }
+                    { route = Route.Pricing, label = text "Commande" }
                 ]
 
         _ ->
@@ -264,7 +264,7 @@ header { class, orientation } =
                     , paddingXY 16 8
                     , mouseOver [ Font.color Color.warmGray200 ]
                     ]
-                    { route = Route.Pricing, label = text "Tarifs" }
+                    { route = Route.Pricing, label = text "Commande" }
                 , UI.callLink (alignRight :: UI.callLinkWhiteAttributes)
                 ]
 
@@ -310,7 +310,7 @@ menu =
                 , paddingXY 32 16
                 , mouseOver [ Font.color Color.warmGray200 ]
                 ]
-                { route = Route.Pricing, label = text "Tarifs" }
+                { route = Route.Pricing, label = text "Commande" }
             ]
         ]
 
