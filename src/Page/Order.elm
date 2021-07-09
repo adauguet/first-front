@@ -56,6 +56,7 @@ import FormatNumber
 import FormatNumber.Locales exposing (Decimals(..), frenchLocale)
 import List.Extra as List
 import Millimeter exposing (Millimeter, cm, mm)
+import String.Extra
 import Task
 import UI
 import UI.Color as Color
@@ -209,8 +210,8 @@ view device screenWidth model =
             el [ Font.size 32 ] <| text "Commande"
 
         addressesView =
-            column []
-                [ el [ Font.bold, paddingBottom 12 ] <| text "Adresses"
+            column [ spacing 12 ]
+                [ el [ Font.bold ] <| text "Adresses"
                 , let
                     loadAddressButton =
                         Input.button
@@ -218,6 +219,8 @@ view device screenWidth model =
                             , Border.rounded 4
                             , Font.color Color.white
                             , paddingXY 16 8
+                            , width fill
+                            , Font.center
                             ]
                             { onPress = Just ClickedImport
                             , label = text "Charger mes adresses"
@@ -250,6 +253,13 @@ view device screenWidth model =
                             [ text <| String.fromInt (List.length list) ++ " adresses chargées"
                             , resetAddressesButton
                             ]
+                , paragraph [ Font.size 12, Font.color Color.warmGray400 ]
+                    [ row [ spacing 4 ]
+                        [ UI.faIcon [] "fas fa-info-circle"
+                        , text """Pensez à prévoir au minimum 5 mm de marge entre les dimensions du contenu et celles de l'enveloppe.
+                            Exemple\u{00A0}: pour un faire-part de de 140\u{00A0}x\u{00A0}140\u{00A0}mm, je choisis une enveloppe de 150\u{00A0}x\u{00A0}150\u{00A0}mm."""
+                        ]
+                    ]
                 ]
     in
     case ( device.class, device.orientation ) of
@@ -258,7 +268,7 @@ view device screenWidth model =
                 [ title
                 , addressesView
                 , column [ alignTop, spacing 32 ]
-                    [ dimensionsSelect model
+                    [ envelopeFormatSelect model
                     , envelopeColorSelect model
                     , fontSelect model.fonts model.selectedFont
                     , fontColorSelect model
@@ -275,7 +285,7 @@ view device screenWidth model =
                     [ row [ width fill, spacing 32 ]
                         [ column [ alignTop, width (px 250), spacing 32 ]
                             [ addressesView
-                            , dimensionsSelect model
+                            , envelopeFormatSelect model
                             , envelopeColorSelect model
                             , fontSelect model.fonts model.selectedFont
                             , fontColorSelect model
@@ -290,10 +300,10 @@ view device screenWidth model =
                 ]
 
         _ ->
-            column [ width fill, paddingXY 64 32, spacing 32 ]
+            column [ width shrink, centerX, paddingXY 64 32, spacing 32 ]
                 [ title
-                , column [ width fill, spacing 64 ]
-                    [ row [ centerX, spacing 32 ]
+                , column [ width shrink, spacing 64 ]
+                    [ row [ width shrink, spacing 32 ]
                         [ column
                             [ alignTop
                             , alignLeft
@@ -302,13 +312,14 @@ view device screenWidth model =
                             , width (px 250)
                             ]
                             [ addressesView
-                            , dimensionsSelect model
+                            , envelopeFormatSelect model
                             , envelopeColorSelect model
                             ]
                         , el
                             [ centerX
                             , alignTop
                             , height fill
+                            , width fill
                             ]
                             (preview model 10 500)
                         , column
@@ -329,18 +340,27 @@ view device screenWidth model =
                 ]
 
 
-dimensionsSelect : Model -> Element Msg
-dimensionsSelect model =
-    Input.radio [ spacing 8 ]
-        { onChange = DidSelectFormat
-        , options =
-            model.envelopes
-                |> List.map .format
-                |> List.uniqueBy Envelope.Format.toString
-                |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
-        , selected = Just model.format
-        , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format"
-        }
+envelopeFormatSelect : Model -> Element Msg
+envelopeFormatSelect model =
+    column [ spacing 16 ]
+        [ Input.radio [ spacing 8 ]
+            { onChange = DidSelectFormat
+            , options =
+                model.envelopes
+                    |> List.map .format
+                    |> List.uniqueBy Envelope.Format.toString
+                    |> List.map (\format -> Input.option format (text <| Envelope.Format.toString format))
+            , selected = Just model.format
+            , label = Input.labelAbove [ paddingBottom 12, Font.bold ] <| text "Format de l'enveloppe"
+            }
+        , paragraph [ Font.size 12, Font.color Color.warmGray400 ]
+            [ row [ spacing 4 ]
+                [ UI.faIcon [] "fas fa-info-circle"
+                , text """Pensez à prévoir au minimum 5 mm de marge entre les dimensions du contenu et celles de l'enveloppe.
+                            Exemple\u{00A0}: pour un faire-part de de 140\u{00A0}x\u{00A0}140\u{00A0}mm, je choisis une enveloppe de 150\u{00A0}x\u{00A0}150\u{00A0}mm."""
+                ]
+            ]
+        ]
 
 
 envelopeColorSelect : Model -> Element Msg
@@ -485,7 +505,7 @@ preview model scaleFontSize envelopeWidth =
             round <| Millimeter.toFloat millimeter * pxPerMm model.selectedEnvelope.format envelopeWidth
     in
     column
-        [ width fill
+        [ width <| px envelopeWidth
         , spacing 16
         ]
         [ column
@@ -520,6 +540,13 @@ preview model scaleFontSize envelopeWidth =
 
                 fontSize =
                     round <| pxToMm model.selectedFont.previewSize * pxPerMm model.selectedEnvelope.format envelopeWidth
+
+                format font string =
+                    if font.isAllCapsCompatible then
+                        string
+
+                    else
+                        String.Extra.removeAllCaps string
               in
               el
                 [ alignTop
@@ -543,16 +570,16 @@ preview model scaleFontSize envelopeWidth =
                     , Font.size fontSize
                     , padding 8
                     ]
-                    [ paragraph [] [ text selectedAddress.name ]
-                    , paragraph [] [ text selectedAddress.street ]
-                    , paragraphIfNotEmpty selectedAddress.streetLine2
+                    [ paragraph [] [ text <| format model.selectedFont selectedAddress.name ]
+                    , paragraph [] [ text <| format model.selectedFont selectedAddress.street ]
+                    , paragraphIfNotEmpty <| format model.selectedFont selectedAddress.streetLine2
                     , paragraph []
                         [ row [ spacing 8 ]
-                            [ textIfNotEmpty selectedAddress.postalCode
-                            , textIfNotEmpty selectedAddress.city
+                            [ textIfNotEmpty <| format model.selectedFont selectedAddress.postalCode
+                            , textIfNotEmpty <| format model.selectedFont selectedAddress.city
                             ]
                         ]
-                    , paragraphIfNotEmpty selectedAddress.country
+                    , paragraphIfNotEmpty <| format model.selectedFont selectedAddress.country
                     ]
             ]
         , case model.addresses of
@@ -578,9 +605,15 @@ preview model scaleFontSize envelopeWidth =
                     , el [ centerX, Font.color Color.warmGray400 ] <| text <| String.fromInt index ++ " / " ++ String.fromInt total
                     , Input.button [ Font.color Color.primary500, alignRight ] { onPress = Just ClickedNext, label = text "suivant" }
                     ]
-        , textColumn [ width fill ]
-            [ paragraph [ Font.color Color.warmGray400, Font.size 12, transparent model.selectedFont.isAllCapsCompatible ]
-                [ text "⚠️ Les mots en lettres majuscules sont peu lisibles avec cette police."
+        , paragraph
+            [ Font.color Color.warmGray400
+            , Font.size 12
+            , transparent model.selectedFont.isAllCapsCompatible
+            , width fill
+            ]
+            [ row [ spacing 4 ]
+                [ UI.faIcon [] "fas fa-info-circle"
+                , text "Pour cette police, les mots en lettres majuscules sont convertis en lettres minuscules par souci de lisibilité."
                 ]
             ]
         ]
