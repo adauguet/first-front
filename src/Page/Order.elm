@@ -256,8 +256,7 @@ view device screenWidth model =
                 , paragraph [ Font.size 12, Font.color Color.warmGray400 ]
                     [ row [ spacing 4 ]
                         [ UI.faIcon [] "fas fa-info-circle"
-                        , text """Pensez à prévoir au minimum 5 mm de marge entre les dimensions du contenu et celles de l'enveloppe.
-                            Exemple\u{00A0}: pour un faire-part de de 140\u{00A0}x\u{00A0}140\u{00A0}mm, je choisis une enveloppe de 150\u{00A0}x\u{00A0}150\u{00A0}mm."""
+                        , text """Fichier au format .csv"""
                         ]
                     ]
                 ]

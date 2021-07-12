@@ -1,6 +1,5 @@
 module String.Extra exposing (removeAllCaps)
 
-import Char exposing (toLower)
 import String exposing (split)
 
 
