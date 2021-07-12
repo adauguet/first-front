@@ -2,6 +2,7 @@ module Font exposing (Font, all, typeface)
 
 import Element.Font
 import Envelope.Color exposing (Color(..))
+import Html exposing (pre)
 
 
 type alias Font =
@@ -51,5 +52,10 @@ all =
       , Font "Stalemate" 22 26 False Script
       , Font "Sue Ellen Fransisco" size previewSize True Script
       , Font "Waiting for the Sunrise" size previewSize True Script
+      , Font "Ballet" size previewSize False Cursive
+      , Font "Lovers Quarrel" 24 24 False Cursive
+      , Font "Miss Fajardose" 24 28 False Cursive
+      , Font "Monsieur La Doulaise" size 24 False Cursive
+      , Font "Mrs Saint Delafield" 22 26 False Cursive
       ]
     )

@@ -66,3 +66,23 @@
     font-family: 'Waiting for the Sunrise';
     src: url('./fonts/WaitingfortheSunrise-Regular.ttf');
 }
+@font-face {
+    font-family: 'Ballet';
+    src: url('/fonts/Ballet-Regular-VariableFont_opsz.ttf');
+}
+@font-face {
+    font-family: 'Lovers Quarrel';
+    src: url('/fonts/LoversQuarrel-Regular.ttf');
+}
+@font-face {
+    font-family: 'Miss Fajardose';
+    src: url('/fonts/MissFajardose-Regular.ttf');
+}
+@font-face {
+    font-family: 'Monsieur La Doulaise';
+    src: url('/fonts/MonsieurLaDoulaise-Regular.ttf');
+}
+@font-face {
+    font-family: 'Mrs Saint Delafield';
+    src: url('/fonts/MrsSaintDelafield-Regular.ttf');
+}
